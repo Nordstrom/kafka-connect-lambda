@@ -48,7 +48,8 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
   private final int retries;
   private final Collection<Integer> retriableErrorCodes;
   private final boolean isWithJsonWrapper = true;
-  private final int maxBatchSizeBytes = (1 * MEGABYTE_SIZE) - 1;
+  private final int maxBatchSizeBytes = (6 * MEGABYTE_SIZE) - 1;
+  private final String awsRegion;
 
   public LambdaSinkConnectorConfig(final Map<String, String> properties) {
     this(configDefinition, properties);
@@ -98,6 +99,8 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
       throw new ConfigException(errorMessage, e);
     }
     this.retryBackoffTimeMillis = this.getInt(ConfigurationKeys.RETRY_BACKOFF_MILLIS.getValue());
+
+    this.awsRegion = this.getString(ConfigurationKeys.AWS_REGION.getValue());
 
   }
 
@@ -155,6 +158,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
   public int getMaxBatchSizeBytes() {
     return this.maxBatchSizeBytes;
+  }
+
+  public String getAwsRegion() {
+    return this.awsRegion;
   }
 
   static ConfigDef getConfigDefinition() {

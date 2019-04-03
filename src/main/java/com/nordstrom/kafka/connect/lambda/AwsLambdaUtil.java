@@ -49,6 +49,11 @@ public class AwsLambdaUtil {
                     config.getCredentialsProfile().get());
         }
 
+        if (config.getAwsRegion().isPresent()) {
+            builder.setRegion(config.getAwsRegion().get());
+            LOGGER.info("Using aws region: {}", config.getAwsRegion().toString());
+        }
+
         this.lambdaClient = builder.build();
         LOGGER.info("AWS Lambda client initialized");
     }
@@ -67,7 +72,7 @@ public class AwsLambdaUtil {
         return this.invoke(functionName, payload, timeout, InvocationType.Event);
     }
 
-    private InvocationResponse invoke(
+    InvocationResponse invoke(
             final String functionName,
             final byte[] payload,
             final Duration timeout,

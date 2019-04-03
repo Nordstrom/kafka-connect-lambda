@@ -20,9 +20,10 @@ public class LambdaSinkTask extends SinkTask {
 
   private final Queue<SinkRecord> batchRecords = new ConcurrentLinkedQueue<>();
   private final AtomicInteger retryCount = new AtomicInteger(0);
-  private LambdaSinkTaskConfiguration configuration;
-  private AwsLambdaUtil lambdaClient;
-  private Map<String, String> properties;
+
+  AwsLambdaUtil lambdaClient;
+  Map<String, String> properties;
+  LambdaSinkTaskConfiguration configuration;
 
   @Override
   public String version() {
@@ -41,7 +42,8 @@ public class LambdaSinkTask extends SinkTask {
             new Configuration(
                     this.configuration.getAwsCredentialsProfile(),
                     this.configuration.getHttpProxyHost(),
-                    this.configuration.getHttpProxyPort())
+                    this.configuration.getHttpProxyPort(),
+                    this.configuration.getAwsRegion())
     );
     LOGGER.info("Context for connector {} task {}, Assignments[{}], ",
             this.configuration.getConnectorName(),
@@ -86,6 +88,10 @@ public class LambdaSinkTask extends SinkTask {
   @Override
   public void flush(final Map<TopicPartition, OffsetAndMetadata> currentOffsets) {
     this.rinse();
+  }
+
+  public void setLambdaClient(AwsLambdaUtil lambdaClient) {
+    this.lambdaClient = lambdaClient;
   }
 
   private void rinse() {
@@ -281,7 +287,7 @@ public class LambdaSinkTask extends SinkTask {
             this.properties.getOrDefault(LambdaSinkConnectorConfig.ConfigurationKeys.TASK_ID.getValue(), "undefined"));
   }
 
-  private class LambdaSinkTaskConfiguration extends LambdaSinkConnectorConfig {
+  class LambdaSinkTaskConfiguration extends LambdaSinkConnectorConfig {
 
     private final String taskId;
 
