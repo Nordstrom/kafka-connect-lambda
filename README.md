@@ -31,6 +31,7 @@ A sink connector configuration has two required fields:
         "aws.lambda.invocation.mode":"SYNC",
         "aws.lambda.batch.enabled":"true",
         "aws.lambda.json.wrapper.enabled":"true",
+        "aws.region":"us-west-2",
         "key.converter": "org.apache.kafka.connect.storage.StringConverter",
         "value.converter": "org.apache.kafka.connect.storage.StringConverter",
         "topics": "test"
