@@ -90,7 +90,8 @@ public class LambdaSinkTaskTest {
                 task.configuration.getAwsCredentialsProfile(),
                 task.configuration.getHttpProxyHost(),
                 task.configuration.getHttpProxyPort(),
-                task.configuration.getAwsRegion())).new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
+                task.configuration.getAwsRegion(),
+                task.configuration.getFailureMode())).new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
 
         Schema testSchema = SchemaBuilder.struct().name("com.nordstrom.kafka.connect.lambda.foo").field("bar", STRING_SCHEMA).build();
 
