@@ -39,6 +39,29 @@ A sink connector configuration has two required fields:
 }
 ```
 
+### Configuration for Avro Messages
+```json
+{
+    "name": "aws-lambda-sink-test",
+    "config": {
+        "connector.class": "com.nordstrom.kafka.connect.lambda.LambdaSinkConnector",
+        "tasks.max": "1",
+        "aws.lambda.function.arn":"arn:aws:lambda:{AWS_REGION}:{AWS_ACCOUNT_NUMBER}:function:test-lambda",
+        "aws.lambda.invocation.timeout.ms":"300000",
+        "aws.lambda.invocation.mode":"SYNC",
+        "aws.lambda.batch.enabled":"true",
+        "aws.lambda.json.wrapper.enabled":"true",
+        "aws.region":"us-west-2",
+        "key.converter": "io.confluent.connect.avro.AvroConverter",
+        "key.converter.schema.registry.url": "http://schema_registry:8081/",
+        "value.converter": "io.confluent.connect.avro.AvroConverter",
+        "value.converter.schema.registry.url": "http://schema_registry:8081/",
+        "topics": "test"
+    }
+}
+```
+
+
 ## AWS IAM Policies
 
 The IAM Role that Kafka Connect is running under must have policies set for Lambda resources in order
@@ -77,6 +100,37 @@ These are required so that Kafka Connect will be able to call your Lambda functi
 ## Create AWS Lambda function
 
 Create `test-lambda` using the AWS Console.  Take note of the ARN value as you will need it to configure the connector later.
+
+### Lambda Function for the Avro Format
+
+Create a `SinkRecord` Object with same fields as `SinkRecordSerializable` 
+```
+public class SinkRecord {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SinkRecordSerializable.class);
+
+    private final ObjectWriter jsonWriter = new ObjectMapper()
+            .writerFor(SinkRecordSerializable.class);
+    private String value;
+    private long offset;
+    private long timestamp;
+    private String timestampTypeName;
+    private int partition;
+    private String key;
+    private String keySchemaName;
+    private String valueSchemaName;
+    private String topic;
+```
+
+Use the above `SinkRecord` object as the lambda input.
+```
+public class SampleLambda implements RequestHandler<SinkRecord, String>{
+
+    @Override
+    public String handleRequest(SinkRecord request, Context context) {
+
+        log.info("Request received: {}", request);
+```
 
 ## Build the connector plugin
 
