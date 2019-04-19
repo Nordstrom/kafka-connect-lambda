@@ -121,9 +121,9 @@ public class SinkRecord {
     private String valueSchemaName;
     private String topic;
 ```
-
+*JAVA:*
 Use the above `SinkRecord` object as the lambda input.
-```
+```java
 public class SampleLambda implements RequestHandler<SinkRecord, String>{
 
     @Override
