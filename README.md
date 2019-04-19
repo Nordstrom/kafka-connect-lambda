@@ -102,7 +102,7 @@ These are required so that Kafka Connect will be able to call your Lambda functi
 Create `test-lambda` using the AWS Console.  Take note of the ARN value as you will need it to configure the connector later.
 
 ### Lambda Function for the Avro Format
-
+#### Java
 Create a `SinkRecord` Object with same fields as `SinkRecordSerializable` 
 ```
 public class SinkRecord {
@@ -121,9 +121,9 @@ public class SinkRecord {
     private String valueSchemaName;
     private String topic;
 ```
-*JAVA:*
+
 Use the above `SinkRecord` object as the lambda input.
-```java
+```
 public class SampleLambda implements RequestHandler<SinkRecord, String>{
 
     @Override
