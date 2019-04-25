@@ -36,6 +36,6 @@ public class AwsLambdaUtilTest {
 
         assertNull(ex);
         assertNotNull(testResp);
-        assertEquals(400, testResp.getStatusCode().intValue());
+        assertEquals(413, testResp.getStatusCode().intValue());
     }
 }

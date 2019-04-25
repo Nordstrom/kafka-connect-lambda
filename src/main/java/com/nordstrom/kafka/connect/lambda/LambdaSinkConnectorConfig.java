@@ -26,7 +26,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
   private static final int HTTP_PROXY_PORT_DEFAULT = -1;
   private static final boolean AWS_LAMBDA_BATCH_ENABLED_DEFAULT = true;
   private static final String AWS_LAMBDA_INVOCATION_MODE_DEFAULT = InvocationMode.SYNC.name();
-  private static final String AWS_LAMBDA_INVOCATION_FAILURE_DEFAULT = InvocationFailure.DROP.name();
+  private static final String AWS_LAMBDA_INVOCATION_FAILURE_MODE_DEFAULT = InvocationFailure.STOP.name();
   private static final String RETRIABLE_ERROR_CODES_DEFAULT = "500,503,504";
   private static final int RETRY_BACKOFF_MILLIS_DEFAULT = 500;
   private static final int RETRIES_DEFAULT = 5;
@@ -105,7 +105,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     this.awsRegion = this.getString(ConfigurationKeys.AWS_REGION.getValue());
 
     this.failureMode = InvocationFailure.valueOf(
-            this.getString(ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE.getValue())
+            this.getString(ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE_MODE.getValue())
     );
 
   }
@@ -191,9 +191,9 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
         AWS_LAMBDA_INVOCATION_MODE_DEFAULT, Importance.MEDIUM,
         ConfigurationKeys.AWS_LAMBDA_INVOCATION_MODE.getDocumentation())
 
-      .define(ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE.getValue(), Type.STRING,
-        AWS_LAMBDA_INVOCATION_FAILURE_DEFAULT, Importance.MEDIUM,
-        ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE.getDocumentation())
+      .define(ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE_MODE.getValue(), Type.STRING,
+        AWS_LAMBDA_INVOCATION_FAILURE_MODE_DEFAULT, Importance.MEDIUM,
+        ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE_MODE.getDocumentation())
 
       .define(ConfigurationKeys.AWS_LAMBDA_BATCH_ENABLED.getValue(), Type.BOOLEAN,
               AWS_LAMBDA_BATCH_ENABLED_DEFAULT, Importance.MEDIUM,
@@ -235,7 +235,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
             "Determines whether the lambda would be called asynchronously (Event) or Synchronously (Request-Response), possible values are: "
                     + Stream.of(InvocationMode.values()).map(InvocationMode::toString)
                     .collect(Collectors.joining(","))),
-    AWS_LAMBDA_INVOCATION_FAILURE("aws.lambda.invocation.failure", //TODO Maybe generalize for all failures
+    AWS_LAMBDA_INVOCATION_FAILURE_MODE("aws.lambda.invocation.failure.mode", // TODO Maybe generalize for other types of failures
             "Determines whether the lambda should stop or drop and continue on failure (specifically, payload limit exceeded), possible values are: "
                     + Stream.of(InvocationFailure.values()).map(InvocationFailure::toString)
                     .collect(Collectors.joining(","))),
