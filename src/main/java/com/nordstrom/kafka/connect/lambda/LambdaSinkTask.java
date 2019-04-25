@@ -43,7 +43,8 @@ public class LambdaSinkTask extends SinkTask {
                     this.configuration.getAwsCredentialsProfile(),
                     this.configuration.getHttpProxyHost(),
                     this.configuration.getHttpProxyPort(),
-                    this.configuration.getAwsRegion())
+                    this.configuration.getAwsRegion(),
+                    this.configuration.getFailureMode())
     );
     LOGGER.info("Context for connector {} task {}, Assignments[{}], ",
             this.configuration.getConnectorName(),

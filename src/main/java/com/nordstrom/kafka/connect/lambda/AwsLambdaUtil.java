@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
+import com.amazonaws.services.lambda.model.RequestTooLargeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,14 @@ public class AwsLambdaUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AwsLambdaUtil.class);
 
+    private static final int MEGABYTE_SIZE = 1024 * 1024;
+    private static final int KILOBYTE_SIZE = 1024;
+
+    private static final int maxSyncPayloadSizeBytes = (6 * MEGABYTE_SIZE);
+    private static final int maxAsyncPayloadSizeBytes = (256 * KILOBYTE_SIZE);
+
     private final AWSLambdaAsync lambdaClient;
+    private final InvocationFailure failureMode;
 
     public AwsLambdaUtil(final Configuration config) {
         Guard.verifyNotNull(config, "config");
@@ -54,6 +62,8 @@ public class AwsLambdaUtil {
             LOGGER.info("Using aws region: {}", config.getAwsRegion().toString());
         }
 
+        failureMode = config.getFailureMode().orElse(InvocationFailure.STOP);
+
         this.lambdaClient = builder.build();
         LOGGER.info("AWS Lambda client initialized");
     }
@@ -78,7 +88,6 @@ public class AwsLambdaUtil {
             final Duration timeout,
             final InvocationType event
     ) {
-
         final InvokeRequest request = new InvokeRequest()
                 .withInvocationType(event)
                 .withFunctionName(functionName)
@@ -91,6 +100,8 @@ public class AwsLambdaUtil {
             final InvokeResult result = futureResult.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
             return new InvocationResponse(result.getStatusCode(), result.getLogResult(),
                     result.getFunctionError(), start, Instant.now());
+        } catch (RequestTooLargeException e) {
+            return checkPayloadSizeForInvocationType(payload, event, start, e);
         } catch (final InterruptedException | ExecutionException e) {
             LOGGER.error(e.getLocalizedMessage(), e);
             throw new LambdaInvocationException(e);
@@ -98,6 +109,42 @@ public class AwsLambdaUtil {
             return new InvocationResponse(504, e.getLocalizedMessage(), e.getLocalizedMessage(), start,
                     Instant.now());
         }
+    }
+
+    /**
+     *
+     * @param payload a byte array representation of the payload sent to AWS Lambda service
+     * @param event   enumeration type to determine if we are sending in aynch, sync, or no-op mode
+     * @param start   time instance when Lambda invocation was started
+     * @param e       exception indicative of the payload size being over the max allowable
+     * @return        a rolled up Lambda invocation response
+     * @throws        RequestTooLargeException is rethrown if the failure mode is set to stop immediately
+     */
+    InvocationResponse checkPayloadSizeForInvocationType(final byte[] payload, final InvocationType event, final Instant start, final RequestTooLargeException e) {
+        switch (event) {
+
+            case Event:
+                if (payload.length > maxAsyncPayloadSizeBytes) {
+                    LOGGER.error("{} bytes payload exceeded {} bytes invocation limit for asynchronous Lambda call", payload.length, maxAsyncPayloadSizeBytes);
+                }
+                break;
+
+            case RequestResponse:
+                if (payload.length > maxSyncPayloadSizeBytes) {
+                    LOGGER.error("{} bytes payload exceeded {} bytes invocation limit for synchronous Lambda call", payload.length, maxSyncPayloadSizeBytes);
+                }
+                break;
+
+            default:
+                LOGGER.info("Dry run call to Lambda with payload size {}", payload.length);
+                break;
+        }
+
+        if (failureMode.equals(InvocationFailure.STOP)) {
+            throw e;
+        }
+        // Drop message and continue
+        return new InvocationResponse(413, e.getLocalizedMessage(), e.getLocalizedMessage(), start, Instant.now());
     }
 
     private class LambdaInvocationException extends RuntimeException {

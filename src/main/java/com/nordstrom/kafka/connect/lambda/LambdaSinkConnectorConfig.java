@@ -26,6 +26,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
   private static final int HTTP_PROXY_PORT_DEFAULT = -1;
   private static final boolean AWS_LAMBDA_BATCH_ENABLED_DEFAULT = true;
   private static final String AWS_LAMBDA_INVOCATION_MODE_DEFAULT = InvocationMode.SYNC.name();
+  private static final String AWS_LAMBDA_INVOCATION_FAILURE_MODE_DEFAULT = InvocationFailure.STOP.name();
   private static final String RETRIABLE_ERROR_CODES_DEFAULT = "500,503,504";
   private static final int RETRY_BACKOFF_MILLIS_DEFAULT = 500;
   private static final int RETRIES_DEFAULT = 5;
@@ -50,6 +51,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
   private final boolean isWithJsonWrapper = true;
   private final int maxBatchSizeBytes = (6 * MEGABYTE_SIZE) - 1;
   private final String awsRegion;
+  private final InvocationFailure failureMode;
 
   public LambdaSinkConnectorConfig(final Map<String, String> properties) {
     this(configDefinition, properties);
@@ -102,6 +104,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
     this.awsRegion = this.getString(ConfigurationKeys.AWS_REGION.getValue());
 
+    this.failureMode = InvocationFailure.valueOf(
+            this.getString(ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE_MODE.getValue())
+    );
+
   }
 
   public Map<String, String> getProperties() {
@@ -138,6 +144,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
   public InvocationMode getInvocationMode() {
     return this.invocationMode;
+  }
+
+  public InvocationFailure getFailureMode() {
+    return this.failureMode;
   }
 
   public boolean isBatchingEnabled() {
@@ -181,6 +191,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
         AWS_LAMBDA_INVOCATION_MODE_DEFAULT, Importance.MEDIUM,
         ConfigurationKeys.AWS_LAMBDA_INVOCATION_MODE.getDocumentation())
 
+      .define(ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE_MODE.getValue(), Type.STRING,
+        AWS_LAMBDA_INVOCATION_FAILURE_MODE_DEFAULT, Importance.MEDIUM,
+        ConfigurationKeys.AWS_LAMBDA_INVOCATION_FAILURE_MODE.getDocumentation())
+
       .define(ConfigurationKeys.AWS_LAMBDA_BATCH_ENABLED.getValue(), Type.BOOLEAN,
               AWS_LAMBDA_BATCH_ENABLED_DEFAULT, Importance.MEDIUM,
               ConfigurationKeys.AWS_LAMBDA_BATCH_ENABLED.getDocumentation())
@@ -220,6 +234,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     AWS_LAMBDA_INVOCATION_MODE("aws.lambda.invocation.mode",
             "Determines whether the lambda would be called asynchronously (Event) or Synchronously (Request-Response), possible values are: "
                     + Stream.of(InvocationMode.values()).map(InvocationMode::toString)
+                    .collect(Collectors.joining(","))),
+    AWS_LAMBDA_INVOCATION_FAILURE_MODE("aws.lambda.invocation.failure.mode", // TODO Maybe generalize for other types of failures
+            "Determines whether the lambda should stop or drop and continue on failure (specifically, payload limit exceeded), possible values are: "
+                    + Stream.of(InvocationFailure.values()).map(InvocationFailure::toString)
                     .collect(Collectors.joining(","))),
 
     AWS_LAMBDA_BATCH_ENABLED("aws.lambda.batch.enabled",
