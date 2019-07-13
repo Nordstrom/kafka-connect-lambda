@@ -1,5 +1,7 @@
 package com.nordstrom.kafka.connect.lambda;
 
+import com.nordstrom.kafka.connect.utils.About;
+import com.nordstrom.kafka.connect.utils.JsonUtil;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
@@ -10,7 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -31,21 +37,26 @@ public class LambdaSinkTask extends SinkTask {
   }
 
   @Override
-  public void start(Map<String, String> props) {
+  public void start(final Map<String, String> props) {
     this.properties = props;
     this.configuration = new LambdaSinkTaskConfiguration(this.properties);
+
     LOGGER.info("starting connector {} task {} with properties {}",
             this.configuration.getConnectorName(),
             this.configuration.getTaskId(),
             props);
-    this.lambdaClient = new AwsLambdaUtil(
-            new Configuration(
+
+    Configuration optConfigs =  new Configuration(
                     this.configuration.getAwsCredentialsProfile(),
                     this.configuration.getHttpProxyHost(),
                     this.configuration.getHttpProxyPort(),
                     this.configuration.getAwsRegion(),
-                    this.configuration.getFailureMode())
-    );
+                    this.configuration.getFailureMode(),
+                    this.configuration.getRoleArn(),
+                    this.configuration.getSessionName(),
+                    this.configuration.getExternalId());
+    this.lambdaClient = new AwsLambdaUtil(optConfigs, configuration.originalsWithPrefix(LambdaSinkConnectorConfig.ConfigurationKeys.CREDENTIALS_PROVIDER_CONFIG_PREFIX.getValue()));
+
     LOGGER.info("Context for connector {} task {}, Assignments[{}], ",
             this.configuration.getConnectorName(),
             this.configuration.getTaskId(),
@@ -58,7 +69,7 @@ public class LambdaSinkTask extends SinkTask {
   }
 
   @Override
-  public void put(Collection<SinkRecord> records) {
+  public void put(final Collection<SinkRecord> records) {
     if (records == null || records.isEmpty()) {
       LOGGER.debug("No records to process.  connector=\"{}\" task=\"{}\"",
               this.configuration.getConnectorName(),
@@ -78,7 +89,8 @@ public class LambdaSinkTask extends SinkTask {
         this.rinse();
         this.context.requestCommit();
       }
-    } else {
+    }
+    else {
       for (final SinkRecord record : records) {
         this.invoke(this.getPayload(record));
       }
@@ -98,7 +110,7 @@ public class LambdaSinkTask extends SinkTask {
   private void rinse() {
     final List<SinkRecord> records = new ArrayList<>(this.batchRecords);
 
-    if (!records.isEmpty()) {
+    if (! records.isEmpty()) {
 
       this.splitBatch(records, this.configuration.getMaxBatchSizeBytes())
               .forEach(recordsToFlush -> {
@@ -271,7 +283,7 @@ public class LambdaSinkTask extends SinkTask {
 
       // NOT retrying -> data loss
       final String message = MessageFormat
-              .format("NonRetriable Error with last call {} {} {} ",
+              .format("Non-retriable Error with last call {} {} {} ",
                       response.getStatusCode(),
                       response.getErrorString(),
                       response.getResponseString()
@@ -292,21 +304,19 @@ public class LambdaSinkTask extends SinkTask {
 
     private final String taskId;
 
-    public LambdaSinkTaskConfiguration(final Map<String, String> properties) {
+    LambdaSinkTaskConfiguration(final Map<String, String> properties) {
       super(LambdaSinkConnectorConfig.getConfigDefinition(), properties);
       this.taskId = "0";//this.getString(ConfigurationKeys.TASK_ID.getValue());
     }
 
-    public String getTaskId() {
+    String getTaskId() {
       return this.taskId;
     }
   }
 
-
   private class OutOfRetriesException extends RuntimeException {
 
-    public OutOfRetriesException(
-            final String message) {
+    OutOfRetriesException(final String message) {
       super(message);
     }
   }

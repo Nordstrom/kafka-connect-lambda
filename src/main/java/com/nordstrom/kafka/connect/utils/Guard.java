@@ -1,4 +1,4 @@
-package com.nordstrom.kafka.connect.lambda;
+package com.nordstrom.kafka.connect.utils;
 
 /**
  * Guard methods throw an exception should the test fail.

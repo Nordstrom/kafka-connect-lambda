@@ -1,4 +1,4 @@
-package com.nordstrom.kafka.connect.lambda;
+package com.nordstrom.kafka.connect.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
