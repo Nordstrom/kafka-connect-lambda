@@ -20,7 +20,7 @@ A sink connector configuration has two required fields:
  * `topics`: The Kafka topic to be read from.
  
 ### AWS Assume Role Support options
- The connector can assume a role:
+ The connector can assume an IAM Role. The role must include a policy that allows lambda:InvokeFunction and lambda:InvokeAsync actions:
  * `lambda.credentials.provider.class=com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`: REQUIRED The credentials provider class.
  * `lambda.credentials.provider.role.arn`: REQUIRED AWS Role ARN providing the access.
  * `lambda.credentials.provider.session.name`: REQUIRED Session name
