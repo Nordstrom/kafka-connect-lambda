@@ -20,8 +20,8 @@ A sink connector configuration has two required fields:
  * `topics`: The Kafka topic to be read from.
  
 ### AWS Assume Role Support options
- The connector can assume a cross-account role:
- * `lambda.credentials.provider.class=com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`: REQUIRED Class providing cross-account role assumption.
+ The connector can assume a role:
+ * `lambda.credentials.provider.class=com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`: REQUIRED The credentials provider class.
  * `lambda.credentials.provider.role.arn`: REQUIRED AWS Role ARN providing the access.
  * `lambda.credentials.provider.session.name`: REQUIRED Session name
  * `lambda.credentials.provider.external.id`: OPTIONAL (but recommended) External identifier used by the `kafka-connect-lambda` when assuming the role.
