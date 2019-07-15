@@ -4,7 +4,6 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import lombok.Getter;
 import org.apache.kafka.common.Configurable;
 
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.Map;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 
-@Getter
 public class AWSAssumeRoleCredentialsProvider implements AWSCredentialsProvider, Configurable {
   //NB: uncomment slf4j imports and field declaration to enable logging.
 //  private static final Logger log = LoggerFactory.getLogger(AWSAssumeRoleCredentialsProvider.class);
@@ -85,4 +83,15 @@ public class AWSAssumeRoleCredentialsProvider implements AWSCredentialsProvider,
     }
   }
 
+  String getExternalId() {
+    return this.externalId;
+  }
+
+  String getRoleArn() {
+    return this.roleArn;
+  }
+
+  String getSessionName() {
+    return this.sessionName;
+  }
 }
