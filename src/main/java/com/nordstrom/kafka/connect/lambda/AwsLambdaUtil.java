@@ -37,7 +37,7 @@ public class AwsLambdaUtil {
     private final InvocationFailure failureMode;
 
     public AwsLambdaUtil(final Configuration optConfigs, final Map<String, ?> bareAssumeRoleConfigs) {
-        LOGGER.info("AwsLambdaUtil.ctor:bareAssumeRoleConfigs={}", bareAssumeRoleConfigs);
+        LOGGER.debug("AwsLambdaUtil.ctor:bareAssumeRoleConfigs={}", bareAssumeRoleConfigs);
         Guard.verifyNotNull(optConfigs, "optConfigs");
 
         final AWSLambdaAsyncClientBuilder builder = AWSLambdaAsyncClientBuilder.standard();
@@ -165,7 +165,7 @@ public class AwsLambdaUtil {
             if (providerField != null) {
                 providerClass = providerField.toString();
             }
-            LOGGER.info(".get-credentials-provider:field={}, class={}", providerField, providerClass);
+            LOGGER.debug(".get-credentials-provider:field={}, class={}", providerField, providerClass);
             AWSCredentialsProvider provider = ((Class<? extends AWSCredentialsProvider>)
                     getClass(providerClass)).newInstance();
 
@@ -173,7 +173,7 @@ public class AwsLambdaUtil {
                 ((Configurable) provider).configure(roleConfigs);
             }
 
-            LOGGER.info(".get-credentials-provider:provider={}", provider);
+            LOGGER.debug(".get-credentials-provider:provider={}", provider);
             return provider;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new ConnectException("Invalid class for: " + LambdaSinkConnectorConfig.ConfigurationKeys.CREDENTIALS_PROVIDER_CLASS_CONFIG, e);
@@ -181,7 +181,7 @@ public class AwsLambdaUtil {
     }
 
     public Class<?> getClass(String className) {
-        LOGGER.info(".get-class:class={}",className);
+        LOGGER.debug(".get-class:class={}",className);
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {

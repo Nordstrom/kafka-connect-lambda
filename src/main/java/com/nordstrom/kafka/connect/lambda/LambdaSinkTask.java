@@ -71,7 +71,7 @@ public class LambdaSinkTask extends SinkTask {
   @Override
   public void put(final Collection<SinkRecord> records) {
     if (records == null || records.isEmpty()) {
-      LOGGER.info("No records to process.  connector=\"{}\" task=\"{}\"",
+      LOGGER.debug("No records to process.  connector=\"{}\" task=\"{}\"",
               this.configuration.getConnectorName(),
               this.configuration.getTaskId());
       return;
@@ -81,7 +81,7 @@ public class LambdaSinkTask extends SinkTask {
       this.batchRecords.addAll(records);
       final int batchLength = this.getPayload(this.batchRecords).getBytes().length;
       if (batchLength >= this.configuration.getMaxBatchSizeBytes()) {
-        LOGGER.info("Batch size reached {} bytes within {} records. connector=\"{}\" task=\"{}\"",
+        LOGGER.warn("Batch size reached {} bytes within {} records. connector=\"{}\" task=\"{}\"",
                 batchLength,
                 this.batchRecords.size(),
                 this.configuration.getConnectorName(),

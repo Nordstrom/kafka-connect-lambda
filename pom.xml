@@ -80,7 +80,7 @@
             </resource>
         </resources>
 
-        <!-- NB: pluginManagement defines configurations for plugins, but DOES
+        <!-- PluginManagement defines configurations for plugins, but DOES
           NOT force execution -->
         <pluginManagement>
             <plugins>
