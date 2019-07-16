@@ -2,7 +2,7 @@
 The AWS Lambda connector plugin provides the ability to use AWS Lambda functions as a sink (out of a Kafka topic into a Lambda function).
 
 ## Supported Kafka and AWS versions
-The `kafka-connect-lambda` connector has been tested with `connect-api:2.1.0` and `aws-java-sdk-lambda:1.11.587`
+The `kafka-connect-lambda` connector has been tested with `connect-api:2.1.0` and `aws-java-sdk-lambda:1.11.592`
 
 # Building
 You can build the connector with Maven using the standard lifecycle goals:
@@ -21,10 +21,10 @@ A sink connector configuration has two required fields:
  
 ### AWS Assume Role Support options
  The connector can assume an IAM Role. The role must include a policy that allows lambda:InvokeFunction and lambda:InvokeAsync actions:
- * `lambda.credentials.provider.class=com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`: REQUIRED The credentials provider class.
- * `lambda.credentials.provider.role.arn`: REQUIRED AWS Role ARN providing the access.
- * `lambda.credentials.provider.session.name`: REQUIRED Session name
- * `lambda.credentials.provider.external.id`: OPTIONAL (but recommended) External identifier used by the `kafka-connect-lambda` when assuming the role.
+ * `aws.credentials.provider.class=com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`: REQUIRED The credentials provider class.
+ * `aws.credentials.provider.role.arn`: REQUIRED AWS Role ARN providing the access.
+ * `aws.credentials.provider.session.name`: REQUIRED Session name
+ * `aws.credentials.provider.external.id`: OPTIONAL (but recommended) External identifier used by the `kafka-connect-lambda` when assuming the role.
 
 ### Sample Configuration
 ```json

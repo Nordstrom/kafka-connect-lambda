@@ -27,7 +27,7 @@
         <maven-project-info-reports-plugin.version>3.0.0</maven-project-info-reports-plugin.version>
 
         <kafka.connect-api.version>2.1.0</kafka.connect-api.version>
-        <aws-java-sdk.version>1.11.587</aws-java-sdk.version>
+        <aws-java-sdk.version>1.11.592</aws-java-sdk.version>
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.28.2</mockito-core.version>
         <google.guava.version>19.0</google.guava.version>
