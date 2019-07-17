@@ -1,5 +1,7 @@
 package com.nordstrom.kafka.connect.lambda;
 
+import com.nordstrom.kafka.connect.utils.Facility;
+
 import java.util.Optional;
 
 import static com.nordstrom.kafka.connect.lambda.InvocationFailure.DROP;
@@ -12,10 +14,16 @@ public class Configuration {
     private final Optional<Integer> httpProxyPort;
     private final Optional<String> awsRegion;
     private final Optional<InvocationFailure> failureMode;
+    private final Optional<String> roleArn;
+    private final Optional<String> sessionName;
+    private final Optional<String> externalId;
+
 
     public Configuration(final String credentialsProfile, final String httpProxyHost,
                          final Integer httpProxyPort, final String awsRegion,
-                         final InvocationFailure failureMode) {
+                         final InvocationFailure failureMode,
+                         final String roleArn, final String sessionName,
+                         final String externalId) {
         /*
          * String awsCredentialsProfile =
          * System.getenv(CREDENTIALS_PROFILE_CONFIG_ENV); String awsProxyHost =
@@ -33,23 +41,40 @@ public class Configuration {
         this.awsRegion =
                 Facility.isNotNullNorEmpty(awsRegion) ? Optional.of(awsRegion) : Optional.empty();
         this.failureMode = Facility.isNotNull(failureMode) ? Optional.of(failureMode): Optional.of(DROP);
+        this.roleArn =
+                Facility.isNotNullNorEmpty(roleArn) ? Optional.of(roleArn) : Optional.empty();
+        this.sessionName =
+                Facility.isNotNullNorEmpty(sessionName) ? Optional.of(sessionName) : Optional.empty();
+        this.externalId =
+                Facility.isNotNullNorEmpty(externalId) ? Optional.of(externalId) : Optional.empty();
+
     }
 
     public Configuration(final Optional<String> awsCredentialsProfile,
                          final Optional<String> httpProxyHost,
                          final Optional<Integer> httpProxyPort,
                          final Optional<String> awsRegion,
-                         final Optional<InvocationFailure> failureMode) {
+                         final Optional<InvocationFailure> failureMode,
+                         final Optional<String> roleArn,
+                         final Optional<String> sessionName,
+                         final Optional<String> externalId) {
 
         this.credentialsProfile = awsCredentialsProfile;
         this.httpProxyHost = httpProxyHost;
         this.httpProxyPort = httpProxyPort;
         this.awsRegion = awsRegion;
         this.failureMode = failureMode;
+        this.roleArn = roleArn;
+        this.sessionName = sessionName;
+        this.externalId = externalId;
     }
 
     public static Configuration empty() {
-        return new Configuration(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        return new Configuration(
+                Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty(),
+                Optional.empty(), Optional.empty());
     }
 
     public Optional<String> getCredentialsProfile() {
@@ -68,4 +93,9 @@ public class Configuration {
 
     public Optional<InvocationFailure> getFailureMode() { return this.failureMode; }
 
+    public Optional<String> getRoleArn() { return this.roleArn; }
+
+    public Optional<String> getSessionName() { return this.sessionName; }
+
+    public Optional<String> getExternalId() { return this.externalId; }
 }

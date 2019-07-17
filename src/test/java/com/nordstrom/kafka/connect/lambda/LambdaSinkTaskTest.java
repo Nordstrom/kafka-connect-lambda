@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 
 import static org.apache.kafka.connect.data.Schema.STRING_SCHEMA;
 import static org.junit.Assert.*;
@@ -91,7 +92,10 @@ public class LambdaSinkTaskTest {
                 task.configuration.getHttpProxyHost(),
                 task.configuration.getHttpProxyPort(),
                 task.configuration.getAwsRegion(),
-                task.configuration.getFailureMode())).new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
+                task.configuration.getFailureMode(),
+                task.configuration.getRoleArn(),
+                task.configuration.getSessionName(),
+                task.configuration.getExternalId()), new HashMap<>()).new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
 
         Schema testSchema = SchemaBuilder.struct().name("com.nordstrom.kafka.connect.lambda.foo").field("bar", STRING_SCHEMA).build();
 

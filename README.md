@@ -2,7 +2,7 @@
 The AWS Lambda connector plugin provides the ability to use AWS Lambda functions as a sink (out of a Kafka topic into a Lambda function).
 
 ## Supported Kafka and AWS versions
-The `kafka-connect-lambda` connector has been tested with `connect-api:2.1.0` and `aws-java-sdk-lambda:1.11.490`
+The `kafka-connect-lambda` connector has been tested with `connect-api:2.1.0` and `aws-java-sdk-lambda:1.11.592`
 
 # Building
 You can build the connector with Maven using the standard lifecycle goals:
@@ -18,6 +18,13 @@ A sink connector reads from a Kafka topic and sends events to an AWS Lambda func
 A sink connector configuration has two required fields:
  * `aws.lambda.function.arn`: The AWS ARN of the Lambda function to send events to.
  * `topics`: The Kafka topic to be read from.
+ 
+### AWS Assume Role Support options
+ The connector can assume an IAM Role. The role must include a policy that allows lambda:InvokeFunction and lambda:InvokeAsync actions:
+ * `aws.credentials.provider.class=com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`: REQUIRED The credentials provider class.
+ * `aws.credentials.provider.role.arn`: REQUIRED AWS Role ARN providing the access.
+ * `aws.credentials.provider.session.name`: REQUIRED Session name
+ * `aws.credentials.provider.external.id`: OPTIONAL (but recommended) External identifier used by the `kafka-connect-lambda` when assuming the role.
 
 ### Sample Configuration
 ```json

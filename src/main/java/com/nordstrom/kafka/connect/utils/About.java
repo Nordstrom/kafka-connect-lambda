@@ -1,4 +1,4 @@
-package com.nordstrom.kafka.connect.lambda;
+package com.nordstrom.kafka.connect.utils;
 
 /**
  * This class is used by the templating-maven-plugin to generate the
