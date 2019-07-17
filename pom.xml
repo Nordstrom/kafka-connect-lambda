@@ -5,7 +5,7 @@
 
     <groupId>com.nordstrom.kafka.connect.lambda</groupId>
     <artifactId>kafka-connect-lambda</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>kafka-connect-lambda</name>
