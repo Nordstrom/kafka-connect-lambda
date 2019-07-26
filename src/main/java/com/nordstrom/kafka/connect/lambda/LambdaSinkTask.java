@@ -1,6 +1,6 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.nordstrom.kafka.connect.utils.About;
+import com.nordstrom.kafka.connect.About;
 import com.nordstrom.kafka.connect.utils.JsonUtil;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
