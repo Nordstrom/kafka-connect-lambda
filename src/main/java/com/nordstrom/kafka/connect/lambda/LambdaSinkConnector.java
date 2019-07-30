@@ -30,9 +30,8 @@ public class LambdaSinkConnector extends SinkConnector {
 
   @Override
   public void start(Map<String, String> settings) {
-    LOGGER.info("starting connector {} with properties {}",
-            settings.getOrDefault(LambdaSinkConnectorConfig.ConfigurationKeys.NAME_CONFIG.getValue(), ""),
-            settings);
+    LOGGER.info("starting connector {}",
+            settings.getOrDefault(LambdaSinkConnectorConfig.ConfigurationKeys.NAME_CONFIG.getValue(), ""));
 
     this.configuration = new LambdaSinkConnectorConfig(settings);
 
