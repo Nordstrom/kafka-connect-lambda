@@ -41,10 +41,9 @@ public class LambdaSinkTask extends SinkTask {
     this.properties = props;
     this.configuration = new LambdaSinkTaskConfiguration(this.properties);
 
-    LOGGER.info("starting connector {} task {} with properties {}",
+    LOGGER.info("starting connector {} task {}",
             this.configuration.getConnectorName(),
-            this.configuration.getTaskId(),
-            props);
+            this.configuration.getTaskId());
 
     Configuration optConfigs =  new Configuration(
                     this.configuration.getAwsCredentialsProfile(),
