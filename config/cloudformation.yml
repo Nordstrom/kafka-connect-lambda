@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Lambda connector example function'
+Resources:
+  ExampleFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: example-function
+      Handler: index.handler
+      Runtime: python3.7
+      Role: !GetAtt 'ExampleFunctionRole.Arn'
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print(f"hello, {event}")
+            return event
+
+  ExampleFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: example-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+Outputs:
+  ExampleFunctionArn:
+    Value: !GetAtt 'ExampleFunction.Arn'
+  ExampleFunctionRoleArn:
+    Value: !GetAtt 'ExampleFunctionRole.Arn'

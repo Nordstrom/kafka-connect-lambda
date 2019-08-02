@@ -1,0 +1,15 @@
+{
+  "name": "example-lambda-connector",
+  "config": {
+    "tasks.max": "1",
+    "connector.class": "com.nordstrom.kafka.connect.lambda.LambdaSinkConnector",
+    "topics": "example-stream",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "aws.region": "<Your AWS region>",
+    "aws.lambda.function.arn": "<Your function ARN>",
+    "aws.lambda.invocation.timeout.ms": "60000",
+    "aws.lambda.invocation.mode": "SYNC",
+    "aws.lambda.batch.enabled": "false"
+  }
+}

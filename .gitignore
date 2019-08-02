@@ -38,3 +38,7 @@ dependency-reduced-pom.xml
 
 # Mac.
 .DS_Store
+
+# Only include the example configurations
+config/connector.json
+config/connector.properties
