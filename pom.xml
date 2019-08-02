@@ -122,6 +122,7 @@
                                 <goal>shade</goal>
                             </goals>
                             <configuration>
+                                <outputDirectory>${project.build.directory}/.shaded-jar</outputDirectory>
                                 <filters>
                                     <filter>
                                         <artifact>*:*</artifact>
