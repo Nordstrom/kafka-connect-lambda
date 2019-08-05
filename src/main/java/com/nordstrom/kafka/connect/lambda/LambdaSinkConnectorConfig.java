@@ -296,12 +296,12 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                     + RETRY_BACKOFF_MILLIS_DEFAULT),
 
     // AWS assume role support options
-    CREDENTIALS_PROVIDER_CLASS_CONFIG("lambda.credentials.provider.class", "REQUIRED Class providing cross-account role assumption"),
-    CREDENTIALS_PROVIDER_CLASS_DEFAULT("com.amazonaws.auth.DefaultAWSCredentialsProviderChain", "Default provider chain if lambda.credentials.provider.class is not passed in"),
-    CREDENTIALS_PROVIDER_CONFIG_PREFIX("aws.credentials.provider.", "Note trailing '.'"),
-    ROLE_ARN_CONFIG("lambda.credentials.provider.role.arn", " REQUIRED AWS Role ARN providing the access"),
-    SESSION_NAME_CONFIG("lambda.credentials.provider.session.name", "REQUIRED Session name"),
-    EXTERNAL_ID_CONFIG("lambda.credentials.provider.external.id", "OPTIONAL (but recommended) External identifier used by the kafka-connect-lambda when assuming the role");
+    CREDENTIALS_PROVIDER_CLASS_CONFIG("aws.lambda.credentials.provider.class", "REQUIRED Class providing cross-account role assumption"),
+    CREDENTIALS_PROVIDER_CLASS_DEFAULT("com.amazonaws.auth.DefaultAWSCredentialsProviderChain", "Default provider chain if aws.lambda.credentials.provider.class is not passed in"),
+    CREDENTIALS_PROVIDER_CONFIG_PREFIX("aws.lambda.credentials.provider.", "Note trailing '.'"),
+    ROLE_ARN_CONFIG("aws.lambda.credentials.provider.role.arn", " REQUIRED AWS Role ARN providing the access"),
+    SESSION_NAME_CONFIG("aws.lambda.credentials.provider.session.name", "REQUIRED Session name"),
+    EXTERNAL_ID_CONFIG("aws.lambda.credentials.provider.external.id", "OPTIONAL (but recommended) External identifier used by the kafka-connect-lambda when assuming the role");
 
     private final String value;
     private final String documentation;
