@@ -30,15 +30,14 @@ public class LambdaSinkTaskTest {
         new ImmutableMap.Builder<String, String>()
                 .put("connector.class", "com.nordstrom.kafka.connect.lambda.LambdaSinkConnector")
                 .put("tasks.max", "1")
+                .put("aws.region", "test-region")
                 .put("aws.lambda.function.arn", "arn:aws:lambda:us-west-2:123456789123:function:test-lambda")
                 .put("aws.lambda.invocation.timeout.ms", "300000")
                 .put("aws.lambda.invocation.mode", "SYNC")
                 .put("aws.lambda.batch.enabled", "true")
-                .put("aws.lambda.json.wrapper.enabled", "true")
                 .put("key.converter", "org.apache.kafka.connect.storage.StringConverter")
                 .put("value.converter", "org.apache.kafka.connect.storage.StringConverter")
                 .put("topics", "connect-lambda-test")
-                .put("aws.credentials.profile", "my-profile")
                 .build();
 
         LambdaSinkTask task = new LambdaSinkTask();
@@ -51,12 +50,12 @@ public class LambdaSinkTaskTest {
         assertNotNull(task.lambdaClient);
 
         assertEquals("0", task.configuration.getTaskId());
+        assertEquals("test-region", task.configuration.getAwsRegion());
         assertEquals("arn:aws:lambda:us-west-2:123456789123:function:test-lambda", task.configuration.getAwsFunctionArn());
+        assertEquals("PT5M", task.configuration.getInvocationTimeout().toString());
         assertEquals("SYNC", task.configuration.getInvocationMode().toString());
-        assertEquals(6291455, task.configuration.getMaxBatchSizeBytes());
-        assertEquals("us-west-2", task.configuration.getAwsRegion());
-        assertEquals("my-profile", task.configuration.getAwsCredentialsProfile());
         assertTrue(task.configuration.isBatchingEnabled());
+        assertEquals(6291455, task.configuration.getMaxBatchSizeBytes());
     }
 
     @Ignore("Test is ignored as a demonstration -- needs profile")
@@ -71,11 +70,9 @@ public class LambdaSinkTaskTest {
                         .put("aws.lambda.invocation.timeout.ms", "300000")
                         .put("aws.lambda.invocation.mode", "SYNC")
                         .put("aws.lambda.batch.enabled", "false")
-                        .put("aws.lambda.json.wrapper.enabled", "true")
                         .put("key.converter", "org.apache.kafka.connect.storage.StringConverter")
                         .put("value.converter", "org.apache.kafka.connect.storage.StringConverter")
                         .put("topics", "connect-lambda-test")
-                        .put("aws.credentials.profile", "my-profile")
                         .build();
 
         LambdaSinkTask task = new LambdaSinkTask();
@@ -88,7 +85,6 @@ public class LambdaSinkTaskTest {
         AwsLambdaUtil mockedLambdaClient = mock(AwsLambdaUtil.class);
 
         when(mockedLambdaClient.invoke(anyString(), anyObject(), anyObject(), eq(InvocationType.RequestResponse))).thenReturn(new AwsLambdaUtil( new Configuration(
-                task.configuration.getAwsCredentialsProfile(),
                 task.configuration.getHttpProxyHost(),
                 task.configuration.getHttpProxyPort(),
                 task.configuration.getAwsRegion(),

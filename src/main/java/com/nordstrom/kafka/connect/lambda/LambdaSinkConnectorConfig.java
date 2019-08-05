@@ -23,7 +23,6 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
   private static final long AWS_LAMBDA_INVOCATION_TIMEOUT_MS_DEFAULT = 5 * 60 * 1000L;
   private static final String AWS_REGION_DEFAULT = "us-west-2";
-  private static final String AWS_CREDENTIALS_PROFILE_DEFAULT = "";
   private static final String HTTP_PROXY_HOST_DEFAULT = "";
   private static final int HTTP_PROXY_PORT_DEFAULT = -1;
   private static final boolean AWS_LAMBDA_BATCH_ENABLED_DEFAULT = true;
@@ -45,7 +44,6 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
   private final String connectorName;
   private final String httpProxyHost;
   private final Integer httpProxyPort;
-  private final String awsCredentialsProfile;
   private final String awsFunctionArn;
   private final Duration invocationTimeout;
   private final InvocationMode invocationMode;
@@ -79,8 +77,6 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
     this.httpProxyHost = this.getString(ConfigurationKeys.HTTP_PROXY_HOST.getValue());
     this.httpProxyPort = this.getInt(ConfigurationKeys.HTTP_PROXY_PORT.getValue());
-
-    this.awsCredentialsProfile = this.getString(ConfigurationKeys.AWS_CREDENTIALS_PROFILE.getValue());
 
     this.awsFunctionArn = this.getString(ConfigurationKeys.AWS_LAMBDA_FUNCTION_ARN.getValue());
     this.invocationTimeout = Duration.ofMillis(this.getLong(ConfigurationKeys.AWS_LAMBDA_INVOCATION_TIMEOUT_MS.getValue()));
@@ -129,10 +125,6 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
   public Duration getInvocationTimeout() {
     return this.invocationTimeout;
-  }
-
-  public String getAwsCredentialsProfile() {
-    return this.awsCredentialsProfile;
   }
 
   public Integer getHttpProxyPort() {
@@ -219,10 +211,6 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
       .define(ConfigurationKeys.AWS_REGION.getValue(), Type.STRING, AWS_REGION_DEFAULT,
               Importance.LOW, ConfigurationKeys.AWS_REGION.getDocumentation())
 
-      .define(ConfigurationKeys.AWS_CREDENTIALS_PROFILE.getValue(), Type.STRING,
-              AWS_CREDENTIALS_PROFILE_DEFAULT, Importance.LOW,
-              ConfigurationKeys.AWS_CREDENTIALS_PROFILE.getDocumentation())
-
       .define(ConfigurationKeys.HTTP_PROXY_HOST.getValue(), Type.STRING, HTTP_PROXY_HOST_DEFAULT,
               Importance.LOW, ConfigurationKeys.HTTP_PROXY_HOST.getDocumentation())
 
@@ -280,8 +268,6 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
             "Boolean that determines if the messages will be batched together before sending them to aws lambda. By default is " + AWS_LAMBDA_BATCH_ENABLED_DEFAULT),
     AWS_REGION("aws.region",
             "AWS region to instantiate the Lambda client Default: " + AWS_REGION_DEFAULT),
-    AWS_CREDENTIALS_PROFILE("aws.credentials.profile",
-            " AWS credentials profile to use for the Lambda client, by default is empty and will use the DefaultAWSCredentialsProviderChain"),
 
     HTTP_PROXY_HOST("http.proxy.host",
             "Http proxy port to be configured for the Lambda client, by default is empty"),
@@ -296,12 +282,12 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                     + RETRY_BACKOFF_MILLIS_DEFAULT),
 
     // AWS assume role support options
-    CREDENTIALS_PROVIDER_CLASS_CONFIG("lambda.credentials.provider.class", "REQUIRED Class providing cross-account role assumption"),
-    CREDENTIALS_PROVIDER_CLASS_DEFAULT("com.amazonaws.auth.DefaultAWSCredentialsProviderChain", "Default provider chain if lambda.credentials.provider.class is not passed in"),
-    CREDENTIALS_PROVIDER_CONFIG_PREFIX("aws.credentials.provider.", "Note trailing '.'"),
-    ROLE_ARN_CONFIG("lambda.credentials.provider.role.arn", " REQUIRED AWS Role ARN providing the access"),
-    SESSION_NAME_CONFIG("lambda.credentials.provider.session.name", "REQUIRED Session name"),
-    EXTERNAL_ID_CONFIG("lambda.credentials.provider.external.id", "OPTIONAL (but recommended) External identifier used by the kafka-connect-lambda when assuming the role");
+    CREDENTIALS_PROVIDER_CLASS_CONFIG("aws.lambda.credentials.provider.class", "REQUIRED Class providing cross-account role assumption"),
+    CREDENTIALS_PROVIDER_CLASS_DEFAULT("com.amazonaws.auth.DefaultAWSCredentialsProviderChain", "Default provider chain if aws.lambda.credentials.provider.class is not passed in"),
+    CREDENTIALS_PROVIDER_CONFIG_PREFIX("aws.lambda.credentials.provider.", "Note trailing '.'"),
+    ROLE_ARN_CONFIG("aws.lambda.credentials.provider.role.arn", " REQUIRED AWS Role ARN providing the access"),
+    SESSION_NAME_CONFIG("aws.lambda.credentials.provider.session.name", "REQUIRED Session name"),
+    EXTERNAL_ID_CONFIG("aws.lambda.credentials.provider.external.id", "OPTIONAL (but recommended) External identifier used by the kafka-connect-lambda when assuming the role");
 
     private final String value;
     private final String documentation;

@@ -46,7 +46,6 @@ public class LambdaSinkTask extends SinkTask {
             this.configuration.getTaskId());
 
     Configuration optConfigs =  new Configuration(
-                    this.configuration.getAwsCredentialsProfile(),
                     this.configuration.getHttpProxyHost(),
                     this.configuration.getHttpProxyPort(),
                     this.configuration.getAwsRegion(),
