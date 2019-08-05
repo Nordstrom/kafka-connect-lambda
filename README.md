@@ -61,6 +61,26 @@ By supplying `com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`
 | `aws.credentials.provider.session.name` | Yes | Name that uniquely identifies a session while the role is being assumed |
 | `aws.credentials.provider.external.id` | No | External identifier used by the `kafka-connect-lambda` when assuming the role |
 
+# Invocation payloads
+
+The default invocation payload is a JSON representation of a [SinkRecord](https://kafka.apache.org/21/javadoc/org/apache/kafka/connect/sink/SinkRecord.html) object, which contains the Kafka message in the `value` field. When `aws.lambda.batch.enabled` is `true`, the invocation payload is an array of these records.
+
+Example payload:
+
+```json
+{
+    "topic": "example-stream",
+    "partition": 1,
+    "offset": 0,
+    "key": "",
+    "keySchemaName": null,
+    "value": "hello world",
+    "valueSchemaName": "example-value",
+    "timestamp": 1564961567407,
+    "timestampTypeName": "CreateTime"
+}
+```
+
 # Try the example demo
 
 Follow the demo in order to: create an AWS Lambda function, build the connector plugin, run the connector, and send a message.
