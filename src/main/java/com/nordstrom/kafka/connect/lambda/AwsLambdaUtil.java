@@ -46,7 +46,7 @@ public class AwsLambdaUtil {
         this.failureMode = failureMode;
         this.lambdaClient = builder.build();
 
-        LOGGER.debug("AWS Lambda client initialized");
+        LOGGER.info("AWS Lambda client initialized");
     }
 
     public InvocationResponse invokeSync(
