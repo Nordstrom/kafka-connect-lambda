@@ -3,6 +3,8 @@ package com.nordstrom.kafka.connect.lambda;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.nordstrom.kafka.connect.formatters.PayloadFormattingException;
+
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +119,7 @@ public class SinkRecordSerializable {
             return this.jsonWriter.writeValueAsString(this);
         } catch (final JsonProcessingException e) {
             LOGGER.error(e.getLocalizedMessage(), e);
-            throw new KafkaSerializationException(e);
+            throw new PayloadFormattingException(e);
         }
 
     }

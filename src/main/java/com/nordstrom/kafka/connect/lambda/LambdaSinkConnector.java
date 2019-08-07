@@ -20,32 +20,27 @@ public class LambdaSinkConnector extends SinkConnector {
   @Override
   public List<Map<String, String>> taskConfigs(int maxTasks) {
     return IntStream.range(0, maxTasks)
-            .mapToObj(i -> {
-              final Map<String, String> taskProperties = new HashMap<>(
-                      this.configuration.getProperties());
-              return taskProperties;
-            })
-            .collect(Collectors.toList());
+      .mapToObj(i -> {
+        return new HashMap<>(this.configuration.originalsStrings());
+      })
+      .collect(Collectors.toList());
   }
 
   @Override
   public void start(Map<String, String> settings) {
-    LOGGER.info("starting connector {}",
-            settings.getOrDefault(LambdaSinkConnectorConfig.ConfigurationKeys.NAME_CONFIG.getValue(), ""));
-
     this.configuration = new LambdaSinkConnectorConfig(settings);
 
-    LOGGER.info("connector.start:OK");
+    LOGGER.info("Starting connector {}", this.configuration.getConnectorName());
   }
 
   @Override
   public void stop() {
-    LOGGER.info("connector.stop:OK");
+    LOGGER.info("Stopping connector {}", this.configuration.getConnectorName());
   }
 
   @Override
   public ConfigDef config() {
-    return LambdaSinkConnectorConfig.config();
+    return LambdaSinkConnectorConfig.configDef();
   }
 
   @Override
