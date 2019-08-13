@@ -14,12 +14,11 @@ public class AWSAssumeRoleCredentialsProviderTest {
 
     @Before
     public void setupTestConfigs() {
-        testConfigs =
-                new ImmutableMap.Builder<String, String>()
-                        .put(AWSAssumeRoleCredentialsProvider.EXTERNAL_ID_CONFIG, "test-external-id")
-                        .put(AWSAssumeRoleCredentialsProvider.ROLE_ARN_CONFIG, "arn:aws:iam::123456789012:role/test-role")
-                        .put(AWSAssumeRoleCredentialsProvider.SESSION_NAME_CONFIG, "test-session-name")
-                        .build();
+        testConfigs = new ImmutableMap.Builder<String, String>()
+            .put(AWSAssumeRoleCredentialsProvider.EXTERNAL_ID_CONFIG, "test-external-id")
+            .put(AWSAssumeRoleCredentialsProvider.ROLE_ARN_CONFIG, "arn:aws:iam::123456789012:role/test-role")
+            .put(AWSAssumeRoleCredentialsProvider.SESSION_NAME_CONFIG, "test-session-name")
+            .build();
     }
 
     @Test

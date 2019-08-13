@@ -64,16 +64,15 @@ services:
     - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
     - CONNECT_INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
     - CONNECT_INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
- 
+
     - CONNECT_PLUGIN_PATH=/opt/connectors
     - KAFKA_LOG4J_OPTS=-Dlog4j.configuration=file:/etc/log4j.properties
- 
+
     - AWS_PROFILE
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
     volumes:
     - ~/.aws:/root/.aws
-    - ./target:/opt/connectors
-    - /opt/connectors/.shaded-jar
+    - ./target/plugin:/opt/connectors
     - ./config/log4j.properties:/etc/log4j.properties
     depends_on: [broker]

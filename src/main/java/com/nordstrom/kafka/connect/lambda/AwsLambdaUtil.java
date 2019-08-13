@@ -9,22 +9,18 @@ import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.amazonaws.services.lambda.model.RequestTooLargeException;
 import com.nordstrom.kafka.connect.utils.Guard;
-import org.apache.kafka.common.Configurable;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class AwsLambdaUtil {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(AwsLambdaUtil.class);
 
     private static final int MEGABYTE_SIZE = 1024 * 1024;
@@ -36,43 +32,20 @@ public class AwsLambdaUtil {
     private final AWSLambdaAsync lambdaClient;
     private final InvocationFailure failureMode;
 
-    public AwsLambdaUtil(final Configuration optConfigs, final Map<String, ?> bareAssumeRoleConfigs) {
-        LOGGER.debug("AwsLambdaUtil.ctor:bareAssumeRoleConfigs={}", bareAssumeRoleConfigs);
-        Guard.verifyNotNull(optConfigs, "optConfigs");
+    public AwsLambdaUtil(ClientConfiguration clientConfiguration,
+        AWSCredentialsProvider credentialsProvider,
+        InvocationFailure failureMode) {
 
-        final AWSLambdaAsyncClientBuilder builder = AWSLambdaAsyncClientBuilder.standard();
+        Guard.verifyNotNull(clientConfiguration, "clientConfiguration");
+        Guard.verifyNotNull(credentialsProvider, "credentialsProvider");
 
-        // Will check if there's proxy configuration in the environment; if
-        // there's any will construct the client with it.
-        if (optConfigs.getHttpProxyHost().isPresent()) {
-            final ClientConfiguration clientConfiguration = new ClientConfiguration()
-                    .withProxyHost(optConfigs.getHttpProxyHost().get());
-            if (optConfigs.getHttpProxyPort().isPresent()) {
-                clientConfiguration.setProxyPort(optConfigs.getHttpProxyPort().get());
-            }
-            builder.setClientConfiguration(clientConfiguration);
-            LOGGER.info("Setting proxy configuration for AWS Lambda Async client host: {} port {}",
-                    optConfigs.getHttpProxyHost().get(), optConfigs.getHttpProxyPort().orElse(-1));
-        }
+        final AWSLambdaAsyncClientBuilder builder = AWSLambdaAsyncClientBuilder.standard()
+            .withClientConfiguration(clientConfiguration)
+            .withCredentials(credentialsProvider);
 
-        if (optConfigs.getAwsRegion().isPresent()) {
-            builder.setRegion(optConfigs.getAwsRegion().get());
-            LOGGER.info("Using aws region: {}", optConfigs.getAwsRegion().toString());
-        }
-
-        failureMode = optConfigs.getFailureMode().orElse(InvocationFailure.STOP);
-
-        AWSCredentialsProvider provider = null;
-        try {
-            provider = getCredentialsProvider(bareAssumeRoleConfigs);
-        } catch (Exception e) {
-            LOGGER.error("Problem initializing provider", e);
-        }
-        if (provider != null) {
-            builder.setCredentials(provider);
-        }
-
+        this.failureMode = failureMode;
         this.lambdaClient = builder.build();
+
         LOGGER.info("AWS Lambda client initialized");
     }
 
@@ -153,41 +126,6 @@ public class AwsLambdaUtil {
         }
         // Drop message and continue
         return new InvocationResponse(413, e.getLocalizedMessage(), e.getLocalizedMessage(), start, Instant.now());
-    }
-
-    @SuppressWarnings("unchecked")
-    public AWSCredentialsProvider getCredentialsProvider(Map<String, ?> roleConfigs) {
-        LOGGER.info(".get-credentials-provider:assumeRoleConfigs={}", roleConfigs);
-
-        try {
-            Object providerField = roleConfigs.get("class");
-            String providerClass =  LambdaSinkConnectorConfig.ConfigurationKeys.CREDENTIALS_PROVIDER_CLASS_DEFAULT.getValue();
-            if (providerField != null) {
-                providerClass = providerField.toString();
-            }
-            LOGGER.debug(".get-credentials-provider:field={}, class={}", providerField, providerClass);
-            AWSCredentialsProvider provider = ((Class<? extends AWSCredentialsProvider>)
-                    getClass(providerClass)).newInstance();
-
-            if (provider instanceof Configurable) {
-                ((Configurable) provider).configure(roleConfigs);
-            }
-
-            LOGGER.debug(".get-credentials-provider:provider={}", provider);
-            return provider;
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new ConnectException("Invalid class for: " + LambdaSinkConnectorConfig.ConfigurationKeys.CREDENTIALS_PROVIDER_CLASS_CONFIG, e);
-        }
-    }
-
-    public Class<?> getClass(String className) {
-        LOGGER.debug(".get-class:class={}",className);
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            LOGGER.error("Provider class not found: {}", e);
-        }
-        return null;
     }
 
     private class LambdaInvocationException extends RuntimeException {

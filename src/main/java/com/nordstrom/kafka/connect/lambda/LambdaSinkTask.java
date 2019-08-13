@@ -1,10 +1,13 @@
 package com.nordstrom.kafka.connect.lambda;
 
 import com.nordstrom.kafka.connect.About;
+import com.nordstrom.kafka.connect.formatters.PayloadFormatter;
+import com.nordstrom.kafka.connect.formatters.PayloadFormattingException;
 import com.nordstrom.kafka.connect.utils.JsonUtil;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -26,10 +29,11 @@ public class LambdaSinkTask extends SinkTask {
 
   private final Queue<SinkRecord> batchRecords = new ConcurrentLinkedQueue<>();
   private final AtomicInteger retryCount = new AtomicInteger(0);
+  private final int maxBatchSizeBytes = (6 * 1024 * 1024) - 1;
 
   AwsLambdaUtil lambdaClient;
-  Map<String, String> properties;
-  LambdaSinkTaskConfiguration configuration;
+  PayloadFormatter payloadFormatter;
+  LambdaSinkConnectorConfig configuration;
 
   @Override
   public String version() {
@@ -37,27 +41,19 @@ public class LambdaSinkTask extends SinkTask {
   }
 
   @Override
-  public void start(final Map<String, String> props) {
-    this.properties = props;
-    this.configuration = new LambdaSinkTaskConfiguration(this.properties);
+  public void start(final Map<String, String> settings) {
+    this.configuration = new LambdaSinkConnectorConfig(settings);
 
-    LOGGER.info("starting connector {} task {}",
+    LOGGER.info("Starting lambda connector {} task.", this.configuration.getConnectorName());
+
+    this.lambdaClient = new AwsLambdaUtil(
+        this.configuration.getAwsClientConfiguration(),
+        this.configuration.getAwsCredentialsProvider(),
+        this.configuration.getFailureMode());
+    this.payloadFormatter = this.configuration.getPayloadFormatter();
+
+    LOGGER.info("Context for connector {} task, Assignments[{}], ",
             this.configuration.getConnectorName(),
-            this.configuration.getTaskId());
-
-    Configuration optConfigs =  new Configuration(
-                    this.configuration.getHttpProxyHost(),
-                    this.configuration.getHttpProxyPort(),
-                    this.configuration.getAwsRegion(),
-                    this.configuration.getFailureMode(),
-                    this.configuration.getRoleArn(),
-                    this.configuration.getSessionName(),
-                    this.configuration.getExternalId());
-    this.lambdaClient = new AwsLambdaUtil(optConfigs, configuration.originalsWithPrefix(LambdaSinkConnectorConfig.ConfigurationKeys.CREDENTIALS_PROVIDER_CONFIG_PREFIX.getValue()));
-
-    LOGGER.info("Context for connector {} task {}, Assignments[{}], ",
-            this.configuration.getConnectorName(),
-            this.configuration.getTaskId(),
             this.context
                     .assignment()
                     .stream()
@@ -69,21 +65,19 @@ public class LambdaSinkTask extends SinkTask {
   @Override
   public void put(final Collection<SinkRecord> records) {
     if (records == null || records.isEmpty()) {
-      LOGGER.debug("No records to process.  connector=\"{}\" task=\"{}\"",
-              this.configuration.getConnectorName(),
-              this.configuration.getTaskId());
+      LOGGER.debug("No records to process.  connector=\"{}\"",
+              this.configuration.getConnectorName());
       return;
     }
 
     if (this.configuration.isBatchingEnabled()) {
       this.batchRecords.addAll(records);
       final int batchLength = this.getPayload(this.batchRecords).getBytes().length;
-      if (batchLength >= this.configuration.getMaxBatchSizeBytes()) {
-        LOGGER.warn("Batch size reached {} bytes within {} records. connector=\"{}\" task=\"{}\"",
+      if (batchLength >= maxBatchSizeBytes) {
+        LOGGER.warn("Batch size reached {} bytes within {} records. connector=\"{}\"",
                 batchLength,
                 this.batchRecords.size(),
-                this.configuration.getConnectorName(),
-                this.configuration.getTaskId());
+                this.configuration.getConnectorName());
         this.rinse();
         this.context.requestCommit();
       }
@@ -110,7 +104,7 @@ public class LambdaSinkTask extends SinkTask {
 
     if (! records.isEmpty()) {
 
-      this.splitBatch(records, this.configuration.getMaxBatchSizeBytes())
+      this.splitBatch(records, maxBatchSizeBytes)
               .forEach(recordsToFlush -> {
 
                 final AwsLambdaUtil.InvocationResponse response = this.invoke(this.getPayload(recordsToFlush));
@@ -125,10 +119,9 @@ public class LambdaSinkTask extends SinkTask {
                         .collect(Collectors.joining(" | "));
                 if (responsesMsg != null && !responsesMsg.isEmpty()) {
                   final String message = MessageFormat.format(
-                          "Response Summary Batch - arn=\"{0}\", connector=\"{1}\" task=\"{2}\", recordcount=\"{3}\" responseCode=\"{4}\" response=\"{5}\" start=\"{6}\" durationtimemillis=\"{7}\" | {8}",
+                          "Response Summary Batch - arn=\"{0}\", connector=\"{1}\" recordcount=\"{3}\" responseCode=\"{4}\" response=\"{5}\" start=\"{6}\" durationtimemillis=\"{7}\" | {8}",
                           this.configuration.getAwsFunctionArn(),
                           this.configuration.getConnectorName(),
-                          this.configuration.getTaskId(),
                           recordsToFlush.size(),
                           response.getStatusCode(),
                           String.join(" : ", response.getResponseString(), response.getErrorString()),
@@ -143,16 +136,14 @@ public class LambdaSinkTask extends SinkTask {
               });
       if (!this.batchRecords.isEmpty()) {
         LOGGER.error(
-                "Race Condition Found between sinkConnector.put() and sinkConnector.flush() connector=\"{}\" task=\"{}\"",
-                this.configuration.getConnectorName(),
-                this.configuration.getTaskId());
+                "Race Condition Found between sinkConnector.put() and sinkConnector.flush() connector=\"{}\"",
+                this.configuration.getConnectorName());
       }
 
     }
     else {
-      LOGGER.info("No records sent in the flush cycle. connector=\"{}\" task=\"{}\"",
-              this.configuration.getConnectorName(),
-              this.configuration.getTaskId());
+      LOGGER.info("No records sent in the flush cycle. connector=\"{}\"",
+              this.configuration.getConnectorName());
     }
     this.context.requestCommit();
   }
@@ -187,17 +178,19 @@ public class LambdaSinkTask extends SinkTask {
   }
 
   private String getPayload(final SinkRecord record) {
-    return this.configuration.isWithJsonWrapper() ?
-            new SinkRecordSerializable(record).toJsonString() :
-            record.value().toString();
+    try {
+      return this.payloadFormatter.format(record);
+    } catch (final PayloadFormattingException e) {
+      throw new DataException("Record could not be formatted.", e);
+    }
   }
 
   private String getPayload(final Collection<SinkRecord> records) {
-    final List<String> stringRecords = records
-            .stream()
-            .map(this::getPayload)
-            .collect(Collectors.toList());
-    return JsonUtil.jsonify(stringRecords);
+    try {
+      return this.payloadFormatter.formatBatch(records);
+    } catch (final PayloadFormattingException e) {
+      throw new DataException("Records could not be formatted.", e);
+    }
   }
 
   private AwsLambdaUtil.InvocationResponse invoke(final String payload) {
@@ -293,27 +286,10 @@ public class LambdaSinkTask extends SinkTask {
 
   @Override
   public void stop() {
-    LOGGER.info("stopping lambda connector {} task {}.",
-            this.properties.getOrDefault(LambdaSinkConnectorConfig.ConfigurationKeys.NAME_CONFIG.getValue(), "undefined"),
-            this.properties.getOrDefault(LambdaSinkConnectorConfig.ConfigurationKeys.TASK_ID.getValue(), "undefined"));
-  }
-
-  class LambdaSinkTaskConfiguration extends LambdaSinkConnectorConfig {
-
-    private final String taskId;
-
-    LambdaSinkTaskConfiguration(final Map<String, String> properties) {
-      super(LambdaSinkConnectorConfig.getConfigDefinition(), properties);
-      this.taskId = "0";//this.getString(ConfigurationKeys.TASK_ID.getValue());
-    }
-
-    String getTaskId() {
-      return this.taskId;
-    }
+    LOGGER.info("Stopping lambda connector {} task.", this.configuration.getConnectorName());
   }
 
   private class OutOfRetriesException extends RuntimeException {
-
     OutOfRetriesException(final String message) {
       super(message);
     }
