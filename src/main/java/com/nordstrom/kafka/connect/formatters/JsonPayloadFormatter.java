@@ -3,13 +3,12 @@ package com.nordstrom.kafka.connect.formatters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.common.Configurable;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.json.JsonConverterConfig;
 import org.apache.kafka.connect.json.JsonDeserializer;
 import org.apache.kafka.connect.sink.SinkRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,23 +16,26 @@ import java.util.Map;
 
 import static java.util.Collections.emptyMap;
 
-public class JsonPayloadFormatter implements PayloadFormatter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PlainPayloadFormatter.class);
-
+public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
   private final ObjectMapper mapper = new ObjectMapper();
   private final JsonConverter converter = new JsonConverter();
   private final JsonDeserializer deserializer = new JsonDeserializer();
+  private boolean includeSchema = true;
 
   public JsonPayloadFormatter() {
     converter.configure(emptyMap(), false);
     deserializer.configure(emptyMap(), false);
   }
 
-  public String format(final SinkRecord record) {
-    return format(record, true);
+  @Override
+  public void configure(Map<String, ?> configs) {
+    final Object schemasEnable = configs.get("formatter.schemas.enable");
+    if (schemasEnable != null) {
+      includeSchema = Boolean.parseBoolean(schemasEnable.toString());
+    }
   }
 
-  public String format(final SinkRecord record, final boolean includeSchema) {
+  public String format(final SinkRecord record) {
     try {
       if (includeSchema) {
         // This is ugly as we need to handle all variations of key/value schema not present.
@@ -67,7 +69,7 @@ public class JsonPayloadFormatter implements PayloadFormatter {
         Payload<Object, Object> payload = new Payload<>(record);
         payload.setKey(deserializeRecordKey(record));
         payload.setValue(deserializeRecordValue(record));
-        //TODO Should we include schema name/version if present?
+        //Do not include schema name/version if present.
         payload.setKeySchemaName(null);
         payload.setKeySchemaVersion(null);
         payload.setValueSchemaName(null);

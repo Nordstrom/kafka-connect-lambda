@@ -184,7 +184,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     public PayloadFormatter getPayloadFormatter() {
         return this.payloadFormatter;
     }
-    public boolean isPayloadFormatterSchemsaEnable() {
+    public boolean isPayloadFormatterSchemasEnable() {
         return this.getBoolean(ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getValue());
     }
 
@@ -196,6 +196,11 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
             PayloadFormatter payloadFormatter = ((Class<? extends PayloadFormatter>)
                 getClass(configKey)).getDeclaredConstructor().newInstance();
 
+            if (payloadFormatter instanceof Configurable) {
+                Map<String, Object>configs = originalsWithPrefix(
+                    ConfigurationKeys.PAYLOAD_FORMATTER_CONFIG_PREFIX.getValue());
+                ((Configurable)payloadFormatter).configure(configs);
+            }
             return payloadFormatter;
 
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
@@ -288,7 +293,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                 "Invocation payload formatter class")
 
             .define(ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getValue(),
-                Type.BOOLEAN, true,
+                Type.BOOLEAN, PAYLOAD_FORMATTER_SCHEMAS_ENABLE_DEFAULT,
                 Importance.LOW,
                 ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getDocumentation()
                 )
@@ -334,6 +339,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
         AWS_IAM_SESSION_NAME_CONFIG("aws.credentials.provider.session.name", "REQUIRED Session name"),
         AWS_IAM_EXTERNAL_ID_CONFIG("aws.credentials.provider.external.id", "OPTIONAL (but recommended) External identifier used by the kafka-connect-lambda when assuming the role"),
 
+        PAYLOAD_FORMATTER_CONFIG_PREFIX("payload.", "Note trailing '.'"),
         PAYLOAD_FORMATTER_CLASS_CONFIG("payload.formatter.class", "Class formatter for the invocation payload"),
         PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG("payload.formatter.schemas.enable", "Include schemas within each of the serialized keys and values")
         ;

@@ -5,8 +5,6 @@ import org.junit.Test;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter;
-import com.nordstrom.kafka.connect.lambda.InvocationMode;
-import com.nordstrom.kafka.connect.lambda.InvocationFailure;
 
 import static org.junit.Assert.*;
 
@@ -40,7 +38,7 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals(DefaultAWSCredentialsProviderChain.class, config.getAwsCredentialsProvider().getClass());
         assertEquals(PlainPayloadFormatter.class, config.getPayloadFormatter().getClass());
         assertTrue(config.isBatchingEnabled());
-        assertTrue(config.isPayloadFormatterSchemsaEnable());
+        assertTrue(config.isPayloadFormatterSchemasEnable());
     }
 
     @Test
@@ -86,7 +84,7 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals("test-connector", config.getConnectorName());
         assertTrue(config.isBatchingEnabled());
         assertEquals(JsonPayloadFormatter.class, config.getPayloadFormatter().getClass());
-        assertTrue(config.isPayloadFormatterSchemsaEnable());
+        assertTrue(config.isPayloadFormatterSchemasEnable());
     }
 
     @Test
@@ -104,7 +102,7 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals("test-connector", config.getConnectorName());
         assertTrue(config.isBatchingEnabled());
         assertEquals(JsonPayloadFormatter.class, config.getPayloadFormatter().getClass());
-        assertFalse(config.isPayloadFormatterSchemsaEnable());
+        assertFalse(config.isPayloadFormatterSchemasEnable());
     }
 
 }

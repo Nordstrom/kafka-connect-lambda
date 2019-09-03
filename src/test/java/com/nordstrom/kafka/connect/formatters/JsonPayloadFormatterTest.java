@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import static java.util.Collections.emptyMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -116,7 +117,10 @@ public class JsonPayloadFormatterTest {
   @Test
   public void testAvroAvroSinkRecordNoSchema() throws IOException {
     final SinkRecord record = createSinkRecord(keySchema, keyStruct, valueSchema, valueStruct);
-    final String result = formatter.format(record, false);
+    Map<String,String> formatterConfig = new HashMap<>();
+    formatterConfig.put("formatter.schemas.enable", "false");
+    formatter.configure(formatterConfig);
+    final String result = formatter.format(record);
     debugShow(record, result);
 
     Payload payload = new Payload<>();
@@ -274,7 +278,10 @@ public class JsonPayloadFormatterTest {
   @Test
   public void testStringStringSinkRecordNoSchema() throws IOException {
     final SinkRecord record = createSinkRecord(null, TEST_KEY_VALUE, null, TEST_VALUE);
-    final String result = formatter.format(record, false);
+    Map<String,String> formatterConfig = new HashMap<>();
+    formatterConfig.put("formatter.schemas.enable", "false");
+    formatter.configure(formatterConfig);
+    final String result = formatter.format(record);
     debugShow(record, result);
 
     Payload payload = new Payload<>();
