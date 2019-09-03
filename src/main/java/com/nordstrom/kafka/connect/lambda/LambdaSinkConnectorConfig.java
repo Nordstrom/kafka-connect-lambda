@@ -41,6 +41,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     private static final String AWS_IAM_ROLE_ARN_DEFAULT = "";
     private static final String AWS_IAM_SESSION_NAME_DEFAULT = "";
     private static final String AWS_IAM_EXTERNAL_ID_DEFAULT = "";
+    private static final boolean PAYLOAD_FORMATTER_SCHEMAS_ENABLE_DEFAULT = true;
 
     private final String connectorName;
     private final ClientConfiguration awsClientConfiguration;
@@ -183,6 +184,9 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     public PayloadFormatter getPayloadFormatter() {
         return this.payloadFormatter;
     }
+    public boolean isPayloadFormatterSchemsaEnable() {
+        return this.getBoolean(ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getValue());
+    }
 
     @SuppressWarnings("unchecked")
     PayloadFormatter loadPayloadFormatter() {
@@ -281,7 +285,14 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                 "LAMBDA",
                 0,
                 ConfigDef.Width.LONG,
-                "Invocation payload formatter class");
+                "Invocation payload formatter class")
+
+            .define(ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getValue(),
+                Type.BOOLEAN, true,
+                Importance.LOW,
+                ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getDocumentation()
+                )
+            ;
     }
 
     enum ConfigurationKeys {
@@ -323,7 +334,9 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
         AWS_IAM_SESSION_NAME_CONFIG("aws.credentials.provider.session.name", "REQUIRED Session name"),
         AWS_IAM_EXTERNAL_ID_CONFIG("aws.credentials.provider.external.id", "OPTIONAL (but recommended) External identifier used by the kafka-connect-lambda when assuming the role"),
 
-        PAYLOAD_FORMATTER_CLASS_CONFIG("payload.formatter.class", "Class formatter for the invocation payload");
+        PAYLOAD_FORMATTER_CLASS_CONFIG("payload.formatter.class", "Class formatter for the invocation payload"),
+        PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG("payload.formatter.schemas.enable", "Include schemas within each of the serialized keys and values")
+        ;
 
         private final String value;
         private final String documentation;
