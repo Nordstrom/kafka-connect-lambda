@@ -10,8 +10,9 @@ Resources:
       Role: !GetAtt 'ExampleFunctionRole.Arn'
       Code:
         ZipFile: |
+          import json
           def handler(event, context):
-            print(f"hello, {event}")
+            print(json.dumps(event))
             return event
 
   ExampleFunctionRole:
