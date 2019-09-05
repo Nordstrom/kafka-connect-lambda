@@ -18,26 +18,42 @@ import static java.util.Collections.emptyMap;
 
 public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
   class SchemaVisiblityStrategy {
-    boolean include = true;
-    boolean isMin = true;
+    private boolean all = false;
+    private boolean none = false;
+    String visibility;
 
     void configure(Map<String, ?> configs, String key) {
       final Object visibility = configs.get(key);
       if (visibility != null) {
         switch (visibility.toString()) {
           case "all":
-            include = true;
-            isMin = false;
+            all = true;
+            none = false;
+            break;
           case "min":
-            include = true;
-            isMin = true;
+            all = false;
+            none = false;
             break;
           case "none":
-            include = false;
-            isMin = false;
+            all = false;
+            none = true;
             break;
         }
+        this.visibility = visibility.toString();
       }
+    }
+
+    @Override
+    public String toString() {
+      return "visibility=" + visibility + ", isAll=" + all + ", isNone=" + none;
+    }
+
+    public boolean isAll() {
+      return all;
+    }
+
+    public boolean isNone() {
+      return none;
     }
   }
 
@@ -71,32 +87,26 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
       if (record.keySchema() == null) {
         deserializedKey = record.key();
       } else {
-        if (keySchemaVisibility.include) {
-          deserializedKey = deserialize(converter, record.topic(), record.keySchema(), record.key());
-        } else {
-          deserializedKey = deserialize(converterSansSchema, record.topic(), record.keySchema(), record.key());
-        }
+        deserializedKey = deserialize(keySchemaVisibility.isAll(), record.topic(), record.keySchema(), record.key());
       }
       if (record.valueSchema() == null) {
         deserializedValue = record.value();
       } else {
-        if (valueSchemaVisibility.include) {
-          deserializedValue = deserialize(converter, record.topic(), record.valueSchema(), record.value());
-        } else {
-          deserializedValue = deserialize(converterSansSchema, record.topic(), record.valueSchema(), record.value());
-        }
+        deserializedValue = deserialize(valueSchemaVisibility.isAll(), record.topic(), record.valueSchema(), record.value());
       }
+
       Payload<Object, Object> p = new Payload<>(record);
       p.setKey(deserializedKey);
       p.setValue(deserializedValue);
-      if (!keySchemaVisibility.isMin) {
+      if (keySchemaVisibility.isNone()) {
         p.setKeySchemaName(null);
         p.setKeySchemaVersion(null);
       }
-      if (!valueSchemaVisibility.isMin) {
+      if (valueSchemaVisibility.isNone()) {
         p.setValueSchemaName(null);
         p.setValueSchemaVersion(null);
       }
+
       return mapper.writeValueAsString(p);
     } catch (JsonProcessingException e) {
       throw new PayloadFormattingException(e);
@@ -108,8 +118,12 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
   }
 
 
-  private JsonNode deserialize(final JsonConverter converter, final String topic, final Schema schema, final Object value) {
-    return deserializer.deserialize(topic, converter.fromConnectData(topic, schema, value));
+  private JsonNode deserialize(final boolean includeSchema, final String topic, final Schema schema, final Object value) {
+    if (includeSchema) {
+      return deserializer.deserialize(topic, converter.fromConnectData(topic, schema, value));
+    } else {
+      return deserializer.deserialize(topic, converterSansSchema.fromConnectData(topic, schema, value));
+    }
   }
 
 }
