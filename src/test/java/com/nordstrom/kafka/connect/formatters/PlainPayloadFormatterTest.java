@@ -12,6 +12,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -22,6 +24,9 @@ import static org.junit.Assert.assertNull;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PlainPayloadFormatterTest {
+  private Logger log = LoggerFactory.getLogger(this.getClass());
+
+  // So we can output test name for debug logging.
   @Rule
   public TestName tname = new TestName();
 
@@ -298,8 +303,7 @@ public class PlainPayloadFormatterTest {
     for (SchemaObjectTest t : schemaObjectTests) {
       final SinkRecord record = createSinkRecord(t.schema, t.object, t.schema, t.object);
       final String result = formatter.format(record);
-      final String s = MessageFormat.format("\n---[ {0}.{1} ]---\n{2}", this.getClass().getSimpleName(), tname.getMethodName(), result);
-      System.out.println(s);
+      log.debug("\n---[ {}.{} ]---\n{}\n", this.getClass().getSimpleName(), tname.getMethodName(), result);
       final PlainPayload payload = mapper
           .readValue(result, PlainPayload.class);
 
@@ -362,9 +366,7 @@ public class PlainPayloadFormatterTest {
   private PlainPayload derivePayload(SinkRecord record) {
     try {
       final String result = formatter.format(record);
-      //TODO Uncomment next 2 lines for quick-n-dirty debugging.
-      final String s = MessageFormat.format("\n---[ {0}.{1} ]---\n{2}", this.getClass().getSimpleName(), tname.getMethodName(), result);
-      System.out.println(s);
+      log.debug("\n---[ {}.{} ]---\n{}\n", this.getClass().getSimpleName(), tname.getMethodName(), result);
       return mapper.readValue(result, PlainPayload.class);
     } catch (Exception e) {
       // Convert to unchecked exception.
