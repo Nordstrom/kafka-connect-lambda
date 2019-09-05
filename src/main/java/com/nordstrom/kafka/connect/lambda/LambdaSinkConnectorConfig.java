@@ -41,7 +41,8 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     private static final String AWS_IAM_ROLE_ARN_DEFAULT = "";
     private static final String AWS_IAM_SESSION_NAME_DEFAULT = "";
     private static final String AWS_IAM_EXTERNAL_ID_DEFAULT = "";
-    private static final boolean PAYLOAD_FORMATTER_SCHEMAS_ENABLE_DEFAULT = true;
+    public static final String PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT = "min";
+    private static final List<String> PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_LIST = Arrays.asList("none", "min", "all");
 
     private final String connectorName;
     private final ClientConfiguration awsClientConfiguration;
@@ -184,8 +185,11 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     public PayloadFormatter getPayloadFormatter() {
         return this.payloadFormatter;
     }
-    public boolean isPayloadFormatterSchemasEnable() {
-        return this.getBoolean(ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getValue());
+    public String getPayloadFormatterKeySchemaVisibility() {
+        return this.getString(ConfigurationKeys.PAYLOAD_FORMATTER_KEY_SCHEMA_VISIBILITY_CONFIG.getValue());
+    }
+    public String getPayloadFormatterValueSchemaVisibility() {
+        return this.getString(ConfigurationKeys.PAYLOAD_FORMATTER_VALUE_SCHEMA_VISIBILITY_CONFIG.getValue());
     }
 
     @SuppressWarnings("unchecked")
@@ -292,15 +296,23 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                 ConfigDef.Width.LONG,
                 "Invocation payload formatter class")
 
-            .define(ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getValue(),
-                Type.BOOLEAN, PAYLOAD_FORMATTER_SCHEMAS_ENABLE_DEFAULT,
+            .define(ConfigurationKeys.PAYLOAD_FORMATTER_KEY_SCHEMA_VISIBILITY_CONFIG.getValue(), Type.STRING,
+                PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT,
+                new PayloadFormatterVisibilityValidator(),
                 Importance.LOW,
-                ConfigurationKeys.PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG.getDocumentation()
+                ConfigurationKeys.PAYLOAD_FORMATTER_KEY_SCHEMA_VISIBILITY_CONFIG.getDocumentation()
                 )
+
+            .define(ConfigurationKeys.PAYLOAD_FORMATTER_VALUE_SCHEMA_VISIBILITY_CONFIG.getValue(), Type.STRING,
+                PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT,
+                new PayloadFormatterVisibilityValidator(),
+                Importance.LOW,
+                ConfigurationKeys.PAYLOAD_FORMATTER_VALUE_SCHEMA_VISIBILITY_CONFIG.getDocumentation()
+            )
             ;
     }
 
-    enum ConfigurationKeys {
+    public enum ConfigurationKeys {
         NAME_CONFIG("name", "Connector Name"),
         AWS_LAMBDA_FUNCTION_ARN("aws.lambda.function.arn", "Full ARN of the function to be called"),
         AWS_LAMBDA_INVOCATION_TIMEOUT_MS("aws.lambda.invocation.timeout.ms",
@@ -341,7 +353,14 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
         PAYLOAD_FORMATTER_CONFIG_PREFIX("payload.", "Note trailing '.'"),
         PAYLOAD_FORMATTER_CLASS_CONFIG("payload.formatter.class", "Class formatter for the invocation payload"),
-        PAYLOAD_FORMATTER_SCHEMAS_ENABLE_CONFIG("payload.formatter.schemas.enable", "Include schemas within each of the serialized keys and values")
+        PAYLOAD_FORMATTER_KEY_SCHEMA_VISIBILITY_CONFIG(
+            "payload.formatter.key.schema.visibility",
+            "Determines visibility of key schema (none, min, all).  Default is " + PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT
+        ),
+        PAYLOAD_FORMATTER_VALUE_SCHEMA_VISIBILITY_CONFIG(
+            "payload.formatter.value.schema.visibility",
+            "Determines visibility of value schema (none, min, all).  Default is " + PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT
+        )
         ;
 
         private final String value;
@@ -355,7 +374,7 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
             this.documentation = documentation;
         }
 
-        String getValue() {
+            String getValue() {
             return this.value;
         }
 
@@ -456,6 +475,18 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
         @Override
         public String toString() {
             return "Any class implementing: " + PayloadFormatter.class;
+        }
+    }
+
+    // Validator used for both key, value schema visibility.
+    private static class PayloadFormatterVisibilityValidator implements ConfigDef.Validator {
+        @Override
+        public void ensureValid(String name, Object visibility) {
+            if (PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_LIST.contains(visibility)) {
+                return;
+            }
+
+            throw new ConfigException(name, visibility, "Must be one of " + PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_LIST);
         }
     }
 }

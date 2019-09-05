@@ -17,85 +17,98 @@ import java.util.Map;
 import static java.util.Collections.emptyMap;
 
 public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
+  class SchemaVisiblityStrategy {
+    boolean include = true;
+    boolean isMin = true;
+
+    void configure(Map<String, ?> configs, String key) {
+      final Object visibility = configs.get(key);
+      if (visibility != null) {
+        switch (visibility.toString()) {
+          case "all":
+            include = true;
+            isMin = false;
+          case "min":
+            include = true;
+            isMin = true;
+            break;
+          case "none":
+            include = false;
+            isMin = false;
+            break;
+        }
+      }
+    }
+  }
+
   private final ObjectMapper mapper = new ObjectMapper();
   private final JsonConverter converter = new JsonConverter();
+  private final JsonConverter converterSansSchema = new JsonConverter();
   private final JsonDeserializer deserializer = new JsonDeserializer();
-  private boolean includeSchema = true;
+  private SchemaVisiblityStrategy keySchemaVisibility = new SchemaVisiblityStrategy();
+  private SchemaVisiblityStrategy valueSchemaVisibility = new SchemaVisiblityStrategy();
 
   public JsonPayloadFormatter() {
     converter.configure(emptyMap(), false);
+
+    Map<String, String> configs = new HashMap<>();
+    configs.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, "false");
+    converterSansSchema.configure(configs, false);
+
     deserializer.configure(emptyMap(), false);
   }
 
   @Override
   public void configure(Map<String, ?> configs) {
-    final Object schemasEnable = configs.get("formatter.schemas.enable");
-    if (schemasEnable != null) {
-      includeSchema = Boolean.parseBoolean(schemasEnable.toString());
-    }
+    keySchemaVisibility.configure(configs, "formatter.key.schema.visibility");
+    valueSchemaVisibility.configure(configs, "formatter.value.schema.visibility");
   }
 
   public String format(final SinkRecord record) {
     try {
-      if (includeSchema) {
-        // This is ugly as we need to handle all variations of key/value schema not present.
-        if (record.keySchema() != null && record.valueSchema() != null) {
-          Payload<JsonNode, JsonNode> payload = new Payload<>(record);
-          payload.setKey(deserializeRecordKey(record));
-          payload.setValue(deserializeRecordValue(record));
-          return mapper.writeValueAsString(payload);
-        } else if (record.keySchema() == null && record.valueSchema() != null) {
-          Payload<Object, JsonNode> payload = new Payload<>(record);
-          payload.setKey(record.key());
-          payload.setValue(deserializeRecordValue(record));
-          return mapper.writeValueAsString(payload);
-        } else if (record.keySchema() != null && record.valueSchema() == null) {
-          Payload<JsonNode, Object> payload = new Payload<>(record);
-          payload.setKey(deserializeRecordKey(record));
-          payload.setValue(record.value());
-          return mapper.writeValueAsString(payload);
-        } else if (record.keySchema() == null && record.valueSchema() == null) {
-          Payload<Object, Object> payload = new Payload<>(record);
-          payload.setKey(record.key());
-          payload.setValue(record.value());
-          return mapper.writeValueAsString(payload);
-        }
+      Object deserializedKey;
+      Object deserializedValue;
+      if (record.keySchema() == null) {
+        deserializedKey = record.key();
       } else {
-        // Disable schema serialization in converter.
-        Map<String, String> configs = new HashMap<>();
-        configs.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, "false");
-        converter.configure(configs, false);
-
-        Payload<Object, Object> payload = new Payload<>(record);
-        payload.setKey(deserializeRecordKey(record));
-        payload.setValue(deserializeRecordValue(record));
-        //Do not include schema name/version if present.
-        payload.setKeySchemaName(null);
-        payload.setKeySchemaVersion(null);
-        payload.setValueSchemaName(null);
-        payload.setValueSchemaVersion(null);
-        return mapper.writeValueAsString(payload);
+        if (keySchemaVisibility.include) {
+          deserializedKey = deserialize(converter, record.topic(), record.keySchema(), record.key());
+        } else {
+          deserializedKey = deserialize(converterSansSchema, record.topic(), record.keySchema(), record.key());
+        }
       }
+      if (record.valueSchema() == null) {
+        deserializedValue = record.value();
+      } else {
+        if (valueSchemaVisibility.include) {
+          deserializedValue = deserialize(converter, record.topic(), record.valueSchema(), record.value());
+        } else {
+          deserializedValue = deserialize(converterSansSchema, record.topic(), record.valueSchema(), record.value());
+        }
+      }
+      Payload<Object, Object> p = new Payload<>(record);
+      p.setKey(deserializedKey);
+      p.setValue(deserializedValue);
+      if (!keySchemaVisibility.isMin) {
+        p.setKeySchemaName(null);
+        p.setKeySchemaVersion(null);
+      }
+      if (!valueSchemaVisibility.isMin) {
+        p.setValueSchemaName(null);
+        p.setValueSchemaVersion(null);
+      }
+      return mapper.writeValueAsString(p);
     } catch (JsonProcessingException e) {
       throw new PayloadFormattingException(e);
     }
-
-    return null;
   }
 
   public String formatBatch(final Collection<SinkRecord> records) {
     return "[{\"hello\": \"world\"}]";
   }
 
-  private JsonNode deserializeRecordKey(final SinkRecord record) {
-    return deserialize(record.topic(), record.keySchema(), record.key());
-  }
 
-  private JsonNode deserializeRecordValue(final SinkRecord record) {
-    return deserialize(record.topic(), record.valueSchema(), record.value());
-  }
-
-  private JsonNode deserialize(final String topic, final Schema schema, final Object value) {
+  private JsonNode deserialize(final JsonConverter converter, final String topic, final Schema schema, final Object value) {
     return deserializer.deserialize(topic, converter.fromConnectData(topic, schema, value));
   }
 

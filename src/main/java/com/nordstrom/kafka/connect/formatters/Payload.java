@@ -2,10 +2,15 @@ package com.nordstrom.kafka.connect.formatters;
 
 import java.text.MessageFormat ;
 import java.util.LinkedHashMap ;
+import java.util.Map;
 import java.util.Map.Entry ;
 import java.util.Set ;
 
+import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.sink.SinkRecord;
+import org.apache.kafka.connect.header.Headers;
+
+import static java.util.Collections.emptyMap;
 
 // TODO: I'd like to factor-out PlainPayload with this Generic type.
 public class Payload<KType, VType> {
@@ -145,4 +150,5 @@ public class Payload<KType, VType> {
   public void setTimestampTypeName(String timestampTypeName) {
     this.timestampTypeName = timestampTypeName;
   }
+
 }

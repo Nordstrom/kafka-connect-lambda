@@ -179,7 +179,10 @@ public class LambdaSinkTask extends SinkTask {
 
   private String getPayload(final SinkRecord record) {
     try {
-      return this.payloadFormatter.format(record);
+      final String formatted = payloadFormatter.format(record);
+      LOGGER.info("formatted-payload:|{}|", formatted);
+      return formatted;
+//      return this.payloadFormatter.format(record);
     } catch (final PayloadFormattingException e) {
       throw new DataException("Record could not be formatted.", e);
     }
