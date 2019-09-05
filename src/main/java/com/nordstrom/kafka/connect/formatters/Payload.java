@@ -1,16 +1,6 @@
 package com.nordstrom.kafka.connect.formatters;
 
-import java.text.MessageFormat ;
-import java.util.LinkedHashMap ;
-import java.util.Map;
-import java.util.Map.Entry ;
-import java.util.Set ;
-
-import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.sink.SinkRecord;
-import org.apache.kafka.connect.header.Headers;
-
-import static java.util.Collections.emptyMap;
 
 // TODO: I'd like to factor-out PlainPayload with this Generic type.
 public class Payload<KType, VType> {
@@ -25,6 +15,9 @@ public class Payload<KType, VType> {
   private long offset;
   private long timestamp;
   private String timestampTypeName;
+  //TODO add header Map<String,String>.
+  // Each header entry is of type ConnectHeader and will need to be serialized/handled in the same manner as
+  // key/value since Header has a key, value and schema.
 
   protected Payload() {
   }
@@ -58,6 +51,7 @@ public class Payload<KType, VType> {
     if (record.timestampType() != null) {
       this.timestampTypeName = record.timestampType().name;
     }
+
   }
 
   //
