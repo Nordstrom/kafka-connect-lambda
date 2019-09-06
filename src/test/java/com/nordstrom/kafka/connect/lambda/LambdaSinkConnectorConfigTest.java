@@ -36,9 +36,12 @@ public class LambdaSinkConnectorConfigTest {
         assertNotNull(config.getIamExternalId());
         assertNotNull(config.getIamSessionName());
 
+        // Check defaults
         assertEquals(DefaultAWSCredentialsProviderChain.class, config.getAwsCredentialsProvider().getClass());
         assertEquals(PlainPayloadFormatter.class, config.getPayloadFormatter().getClass());
         assertTrue(config.isBatchingEnabled());
+        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
     }
 
     @Test
@@ -82,40 +85,9 @@ public class LambdaSinkConnectorConfigTest {
             });
 
         assertEquals("test-connector", config.getConnectorName());
-        assertTrue(config.isBatchingEnabled());
         assertEquals(JsonPayloadFormatter.class, config.getPayloadFormatter().getClass());
-    }
-
-    @Test
-    public void jsonPayloadFormatterNoSchemasConfig() {
-        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
-            new HashMap<String, String>() {
-                {
-                    put("name", "test-connector");
-                    put("aws.lambda.function.arn", "test-function");
-                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
-                    put("payload.formatter.schemas.enable", "false");
-                }
-            });
-
-        assertEquals("test-connector", config.getConnectorName());
-        assertTrue(config.isBatchingEnabled());
-        assertEquals(JsonPayloadFormatter.class, config.getPayloadFormatter().getClass());
-    }
-
-    @Test
-    public void jsonPayloadFormatterSchemaVisibilityConfigDefault() {
-        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
-            new HashMap<String, String>() {
-                {
-                    put("name", "test-connector");
-                    put("aws.lambda.function.arn", "test-function");
-                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
-                }
-            });
-
-        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), "min");
-        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), "min");
+        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
     }
 
     @Test
@@ -132,19 +104,6 @@ public class LambdaSinkConnectorConfigTest {
 
         assertEquals(config.getPayloadFormatterKeySchemaVisibility(), "none");
         assertEquals(config.getPayloadFormatterValueSchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
-    }
-
-    @Test(expected = ConfigException.class)
-    public void jsonPayloadFormatterKeySchemaVisibilityConfigValidatorThrowsException() {
-        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
-            new HashMap<String, String>() {
-                {
-                    put("name", "test-connector");
-                    put("aws.lambda.function.arn", "test-function");
-                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
-                    put("payload.formatter.key.schema.visibility", "x-none");
-                }
-            });
     }
 
     @Test
@@ -164,14 +123,14 @@ public class LambdaSinkConnectorConfigTest {
     }
 
     @Test(expected = ConfigException.class)
-    public void jsonPayloadFormatterValueSchemaVisibilityConfigValidatorThrowsException() {
+    public void jsonPayloadFormatterSchemaVisibilityConfigValidatorThrowsException() {
         LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
             new HashMap<String, String>() {
                 {
                     put("name", "test-connector");
                     put("aws.lambda.function.arn", "test-function");
                     put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
-                    put("payload.formatter.value.schema.visibility", "x-none");
+                    put("payload.formatter.key.schema.visibility", "x-none");
                 }
             });
     }

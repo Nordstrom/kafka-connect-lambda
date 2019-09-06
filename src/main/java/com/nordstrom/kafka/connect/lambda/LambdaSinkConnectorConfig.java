@@ -374,9 +374,9 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
             this.documentation = documentation;
         }
 
-            String getValue() {
-            return this.value;
-        }
+        String getValue() {
+        return this.value;
+    }
 
         String getDocumentation() {
             return this.documentation;

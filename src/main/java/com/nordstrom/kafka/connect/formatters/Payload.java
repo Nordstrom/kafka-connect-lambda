@@ -2,7 +2,7 @@ package com.nordstrom.kafka.connect.formatters;
 
 import org.apache.kafka.connect.sink.SinkRecord;
 
-// TODO: I'd like to factor-out PlainPayload with this Generic type.
+// TODO: Factor-out PlainPayload with this Generic type.
 public class Payload<KType, VType> {
   private KType key;
   private String keySchemaName;
@@ -15,27 +15,20 @@ public class Payload<KType, VType> {
   private long offset;
   private long timestamp;
   private String timestampTypeName;
-  //TODO add header Map<String,String>.
-  // Each header entry is of type ConnectHeader and will need to be serialized/handled in the same manner as
-  // key/value since Header has a key, value and schema.
 
   protected Payload() {
   }
 
   public Payload(final SinkRecord record) {
-//    this.key = record.key() == null ? "" : record.key().toString();
     if (record.keySchema() != null) {
       this.keySchemaName = record.keySchema().name();
-      //NB: may be null if not set in schema.
       if (record.keySchema().version() != null ) {
         this.keySchemaVersion = record.keySchema().version().toString();
       }
     }
 
-//    this.value = record.value() == null ? "" : record.value().toString();
     if (record.valueSchema() != null) {
       this.valueSchemaName = record.valueSchema().name();
-      //NB: may be null if not set in schema.
       if (record.valueSchema().version() != null ) {
         this.valueSchemaVersion = record.valueSchema().version().toString();
       }

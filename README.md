@@ -32,18 +32,18 @@ In addition to the standard [Kafka Connect connector configuration](https://kafk
 | `retry.backoff.millis` | No | `500` | Time to append between invocation retries |
 | `retries.max` | No | `5` | Maximum number of invocation retries |
 | `topics` | Yes | | Comma-delimited Kafka topics names to sink |
-
-## Formatters
-
-The Kafka SinkRecord is wrapped in a Payload envelope. Additional configuration properties control how the Kafka Record key and value are serialized. The PlainPayloadFormatter serializes ignoring any schema defined for key/value.  The JsonPayloadFormatter uses (and optionally includes) the SinkRecord key/value schema.
-
-| Property | Required | Default value | Description |
-|:---------|:---------|:--------|:------------|
 | `payload.formatter.class` | No | `com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter` | Specifies the formatter to use. |
 | `payload.formatter.key.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
 | `payload.formatter.value.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
 
-Schema `visibility` can have values of `none`, `min`, and `all` (default=`min`) and only applies to the `JsonPayloadFormatter`.  Including schema in the payload can result in very large messages.  `min` will include the schema `name` only and `version`.  `none` will null out these values.  `all` will include the entire serialized schema.
+## Formatters
+
+The connector includes two `payload.formatter.class` implementations:
+
+  * `com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter`
+  * `com.nordstrom.kafka.connect.formatters.JsonPayloadFormatter`
+
+Including the full schema information in the invocation payload may result in very large messages. Therefore, use the `schema.visibility` key and value properties to control how much of the schema, if present, to include in the invocation payload: `none`, `min`, or `all` (default=`min`). These settings apply to the `JsonPayloadFormatter` only; The `PlainPayloadFormatter` always includes the `min` schema information.
 
 
 ## Configuration Examples
@@ -97,6 +97,15 @@ Example payload for a SinkRecord for both `PlainPayloadFormatter` and `JsonPaylo
 ```
 
 ### JsonPayloadFormatter
+
+This example uses the following (partial) connector configuration with a SinkRecord String key and an Avro record for value with key and value schema visibility as `min` (the default):
+
+```json
+key.converter=org.apache.kafka.connect.storage.StringConverter
+value.converter=io.confluent.connect.avro.AvroConverter
+aws.lambda.batch.enabled=false
+payload.formatter.class=com.nordstrom.kafka.connect.formatters.JsonPayloadFormatter
+```
 
 ```json
     "key": "string-avro_key",

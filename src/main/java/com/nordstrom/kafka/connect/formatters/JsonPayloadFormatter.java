@@ -17,52 +17,18 @@ import java.util.Map;
 import static java.util.Collections.emptyMap;
 
 public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
-  class SchemaVisiblityStrategy {
-    private boolean all = false;
-    private boolean none = false;
-    String visibility;
-
-    void configure(Map<String, ?> configs, String key) {
-      final Object visibility = configs.get(key);
-      if (visibility != null) {
-        switch (visibility.toString()) {
-          case "all":
-            all = true;
-            none = false;
-            break;
-          case "min":
-            all = false;
-            none = false;
-            break;
-          case "none":
-            all = false;
-            none = true;
-            break;
-        }
-        this.visibility = visibility.toString();
-      }
-    }
-
-    @Override
-    public String toString() {
-      return "visibility=" + visibility + ", isAll=" + all + ", isNone=" + none;
-    }
-
-    public boolean isAll() {
-      return all;
-    }
-
-    public boolean isNone() {
-      return none;
-    }
+  enum SchemaVisibility {
+    ALL,
+    MIN,
+    NONE
   }
 
   private final ObjectMapper mapper = new ObjectMapper();
   private final JsonConverter converter = new JsonConverter();
   private final JsonConverter converterSansSchema = new JsonConverter();
   private final JsonDeserializer deserializer = new JsonDeserializer();
-  private SchemaVisiblityStrategy keySchemaVisibility = new SchemaVisiblityStrategy();
-  private SchemaVisiblityStrategy valueSchemaVisibility = new SchemaVisiblityStrategy();
+  private SchemaVisibility keyVisibility = SchemaVisibility.MIN;
+  private SchemaVisibility valueVisibility = SchemaVisibility.MIN;
 
   public JsonPayloadFormatter() {
     converter.configure(emptyMap(), false);
@@ -76,8 +42,28 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
 
   @Override
   public void configure(Map<String, ?> configs) {
-    keySchemaVisibility.configure(configs, "formatter.key.schema.visibility");
-    valueSchemaVisibility.configure(configs, "formatter.value.schema.visibility");
+    keyVisibility = configureVisibility(configs, "formatter.key.schema.visibility");
+    valueVisibility = configureVisibility(configs, "formatter.value.schema.visibility");
+  }
+
+  private SchemaVisibility configureVisibility(final Map<String, ?> configs, final String key) {
+    SchemaVisibility viz = SchemaVisibility.MIN;
+    final Object visibility = configs.get(key);
+    if (visibility != null) {
+      switch (visibility.toString()) {
+        case "all":
+          viz = SchemaVisibility.ALL;
+          break;
+        case "min":
+          viz = SchemaVisibility.MIN;
+          break;
+        case "none":
+          viz = SchemaVisibility.NONE;
+          break;
+      }
+    }
+
+    return viz;
   }
 
   public String format(final SinkRecord record) {
@@ -87,22 +73,22 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
       if (record.keySchema() == null) {
         deserializedKey = record.key();
       } else {
-        deserializedKey = deserialize(keySchemaVisibility.isAll(), record.topic(), record.keySchema(), record.key());
+        deserializedKey = deserialize(keyVisibility, record.topic(), record.keySchema(), record.key());
       }
       if (record.valueSchema() == null) {
         deserializedValue = record.value();
       } else {
-        deserializedValue = deserialize(valueSchemaVisibility.isAll(), record.topic(), record.valueSchema(), record.value());
+        deserializedValue = deserialize(valueVisibility, record.topic(), record.valueSchema(), record.value());
       }
 
       Payload<Object, Object> p = new Payload<>(record);
       p.setKey(deserializedKey);
       p.setValue(deserializedValue);
-      if (keySchemaVisibility.isNone()) {
+      if (keyVisibility == SchemaVisibility.NONE) {
         p.setKeySchemaName(null);
         p.setKeySchemaVersion(null);
       }
-      if (valueSchemaVisibility.isNone()) {
+      if (valueVisibility == SchemaVisibility.NONE) {
         p.setValueSchemaName(null);
         p.setValueSchemaVersion(null);
       }
@@ -118,8 +104,8 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
   }
 
 
-  private JsonNode deserialize(final boolean includeSchema, final String topic, final Schema schema, final Object value) {
-    if (includeSchema) {
+  private JsonNode deserialize(final SchemaVisibility visibility, final String topic, final Schema schema, final Object value) {
+    if (visibility == SchemaVisibility.ALL) {
       return deserializer.deserialize(topic, converter.fromConnectData(topic, schema, value));
     } else {
       return deserializer.deserialize(topic, converterSansSchema.fromConnectData(topic, schema, value));
