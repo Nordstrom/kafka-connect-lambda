@@ -15,7 +15,7 @@ _The `kafka-connect-lambda` connector has been tested with `connect-api:2.1.0` a
 
 # Configuring
 
-In addition to the standard [Kafka Connect connector configuration](https://kafka.apache.org/documentation/#connect_configuring) properties, the `kafka-connect-lambda` properties available:
+In addition to the standard [Kafka Connect connector configuration](https://kafka.apache.org/documentation/#connect_configuring) properties, the `kafka-connect-lambda` properties available are:
 
 | Property | Required | Default value | Description |
 |:---------|:---------|:--------|:------------|
@@ -33,6 +33,20 @@ In addition to the standard [Kafka Connect connector configuration](https://kafk
 | `retries.max` | No | `5` | Maximum number of invocation retries |
 | `topics` | Yes | | Comma-delimited Kafka topics names to sink |
 
+## Formatters
+
+The Kafka SinkRecord is wrapped in a Payload envelope. Additional configuration properties control how the Kafka Record key and value are serialized. The PlainPayloadFormatter serializes ignoring any schema defined for key/value.  The JsonPayloadFormatter uses (and optionally includes) the SinkRecord key/value schema.
+
+| Property | Required | Default value | Description |
+|:---------|:---------|:--------|:------------|
+| `payload.formatter.class` | No | `com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter` | Specifies the formatter to use. |
+| `payload.formatter.key.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
+| `payload.formatter.value.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
+
+Schema `visibility` can have values of `none`, `min`, and `all` (default=`min`) and only applies to the `JsonPayloadFormatter`.  Including schema in the payload can result in very large messages.  `min` will include the schema `name` only and `version`.  `none` will null out these values.  `all` will include the entire serialized schema.
+
+
+## Configuration Examples
 An example configuration represented as JSON data for use with the [Kafka Connect REST interface](https://docs.confluent.io/current/connect/references/restapi.html):
 
 ```json
@@ -65,18 +79,39 @@ By supplying `com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`
 
 The default invocation payload is a JSON representation of a [SinkRecord](https://kafka.apache.org/21/javadoc/org/apache/kafka/connect/sink/SinkRecord.html) object, which contains the Kafka message in the `value` field. When `aws.lambda.batch.enabled` is `true`, the invocation payload is an array of these records.
 
-Example payload:
+Example payload for a SinkRecord for both `PlainPayloadFormatter` and `JsonPayloadFormatter` are illustrated below:
 
+### PlainPayloadFormatter
 ```json
 {
-    "topic": "example-stream",
+    "key": "string-avro_key",
+    "keySchemaName": null,
+    "value": "Struct{language=ENGLISH,greeting=hello, (string-avro) world}",
+    "valueSchemaName": "com.nordstrom.kafka.example.Hello",
+    "topic": "example-stream_string-avro",
     "partition": 1,
     "offset": 0,
-    "key": "",
+    "timestamp": 1567723257583,
+    "timestampTypeName": "CreateTime"
+}
+```
+
+### JsonPayloadFormatter
+
+```json
+    "key": "string-avro_key",
     "keySchemaName": null,
-    "value": "hello world",
-    "valueSchemaName": "example-value",
-    "timestamp": 1564961567407,
+    "keySchemaVersion": null,
+    "value": {
+        "language": "ENGLISH",
+        "greeting": "hello, (string-avro) world"
+    },
+    "valueSchemaName": "com.nordstrom.kafka.example.Hello",
+    "valueSchemaVersion": "1",
+    "topic": "example-stream_string-avro",
+    "partition": 1,
+    "offset": 0,
+    "timestamp": 1567723257583,
     "timestampTypeName": "CreateTime"
 }
 ```
@@ -102,7 +137,7 @@ To make sure our Lambda works, invoke it directly and view the result payload in
 aws lambda invoke --function-name example-function --payload '{"value": "my example"}' result.txt
 ```
 
-The function simply sends the `payload` back to you in `result.txt`.
+The function simply sends the `payload` back to you in `result.txt` as serialized json.
 
 Use the `describe-stacks` command to fetch the CloudFormation output value for `ExampleFunctionArn`, which we'll need later when setting up our connector configuration:
 
@@ -116,7 +151,7 @@ aws cloudformation describe-stacks --stack-name example-lambda-stack --query "St
 mvn clean package
 ```
 
-Once built, a `kafka-connect-lambda` uber-jar is in the `target/` directory.
+Once built, a `kafka-connect-lambda` uber-jar is in the `target/plugin` directory.
 
 ## Run the connector using Docker Compose
 
