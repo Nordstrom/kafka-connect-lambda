@@ -47,33 +47,33 @@ services:
     logging: { driver: none }
 
   # NB: run connect locally in stand-alone mode to debug
-#  connect:
-#    image: confluentinc/cp-kafka-connect:5.1.3
-#    ports:
-#    - 8083:8083
-#    environment:
-#    - CONNECT_BOOTSTRAP_SERVERS=broker:19092
-#    - CONNECT_REST_ADVERTISED_HOST_NAME=connect
-#    - CONNECT_GROUP_ID=connect
-#    - CONNECT_CONFIG_STORAGE_TOPIC=_connect_configs
-#    - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
-#    - CONNECT_OFFSET_STORAGE_TOPIC=_connect_offsets
-#    - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
-#    - CONNECT_STATUS_STORAGE_TOPIC=_connect_status
-#    - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
-#    - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-#    - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-#    - CONNECT_INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-#    - CONNECT_INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-#
-#    - CONNECT_PLUGIN_PATH=/opt/connectors
-#    - KAFKA_LOG4J_OPTS=-Dlog4j.configuration=file:/etc/log4j.properties
-#
-#    - AWS_PROFILE
-#    - AWS_ACCESS_KEY_ID
-#    - AWS_SECRET_ACCESS_KEY
-#    volumes:
-#    - ~/.aws:/root/.aws
-#    - ./target/plugin:/opt/connectors
-#    - ./config/log4j.properties:/etc/log4j.properties
-#    depends_on: [broker]
+  connect:
+    image: confluentinc/cp-kafka-connect:5.1.3
+    ports:
+    - 8083:8083
+    environment:
+    - CONNECT_BOOTSTRAP_SERVERS=broker:19092
+    - CONNECT_REST_ADVERTISED_HOST_NAME=connect
+    - CONNECT_GROUP_ID=connect
+    - CONNECT_CONFIG_STORAGE_TOPIC=_connect_configs
+    - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
+    - CONNECT_OFFSET_STORAGE_TOPIC=_connect_offsets
+    - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
+    - CONNECT_STATUS_STORAGE_TOPIC=_connect_status
+    - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+    - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+    - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+    - CONNECT_INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+    - CONNECT_INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+
+    - CONNECT_PLUGIN_PATH=/opt/connectors
+    - KAFKA_LOG4J_OPTS=-Dlog4j.configuration=file:/etc/log4j.properties
+
+    - AWS_PROFILE
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+    volumes:
+    - ~/.aws:/root/.aws
+    - ./target/plugin:/opt/connectors
+    - ./config/log4j.properties:/etc/log4j.properties
+    depends_on: [broker]
