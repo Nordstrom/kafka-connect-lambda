@@ -7,7 +7,6 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -497,8 +496,26 @@ public class JsonPayloadFormatterTest {
   }
 
   @Test
-  @Ignore("TODO")
   public void testFormatBatchOfRecords() throws IOException {
+    List<SinkRecord> records = Arrays.asList(
+        createSinkRecord(keySchema, keyStruct, valueSchema, valueStruct),
+        createSinkRecord(keySchema, keyStruct, valueSchema, valueStruct)
+    );
+    final String result = formatter.format(records);
+    debugShow(records, result);
+
+    Payload[] payloads = mapper
+        .readValue(result, Payload[].class);
+
+    assertEquals(records.size(), payloads.length);
+    for (Payload payload : payloads) {
+      assertTrue(payload.getKey() instanceof HashMap);
+      assertEquals(TEST_KEY_CLASS, payload.getKeySchemaName());
+      assertEquals(TEST_KEY_VERSION.toString(), payload.getKeySchemaVersion());
+      assertTrue(payload.getValue() instanceof HashMap);
+      assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
+      assertEquals(TEST_VALUE_VERSION.toString(), payload.getValueSchemaVersion());
+    }
   }
 
 
@@ -523,6 +540,14 @@ public class JsonPayloadFormatterTest {
     log.debug("\n===[ {}.{} ]===\nrecord={}\n-----\nresult={}\n",
         this.getClass().getSimpleName(), tname.getMethodName(),
         record, result);
+  }
+
+  private void debugShow(List<SinkRecord> records, String result) {
+    log.debug("\n===[ {}.{} ]===", this.getClass().getSimpleName(), tname.getMethodName());
+    for (SinkRecord record : records) {
+      log.debug(record.toString());
+    }
+    log.debug("\n-----\nresult={}\n", result);
   }
 
 } //-JsonPayloadFormatterTest

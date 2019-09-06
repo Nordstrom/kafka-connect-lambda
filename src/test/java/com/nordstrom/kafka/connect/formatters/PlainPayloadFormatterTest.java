@@ -104,7 +104,7 @@ public class PlainPayloadFormatterTest {
         new SinkRecord("test-topic", 1, null, "test-key3", null, "test-value3", 2)
     );
 
-    String result = formatter.formatBatch(records);
+    String result = formatter.format(records);
 
     PlainPayload[] payloads = mapper
         .readValue(result, PlainPayload[].class);

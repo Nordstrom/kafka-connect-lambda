@@ -27,7 +27,7 @@ public class PlainPayloadFormatter implements PayloadFormatter {
         }
     }
 
-    public String formatBatch(final Collection<SinkRecord> records) {
+    public String format(final Collection<SinkRecord> records) {
         final PlainPayload[] payloads = records
             .stream()
             .map(record -> new PlainPayload(record))
