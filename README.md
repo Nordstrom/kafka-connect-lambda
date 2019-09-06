@@ -79,9 +79,21 @@ By supplying `com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`
 
 The default invocation payload is a JSON representation of a [SinkRecord](https://kafka.apache.org/21/javadoc/org/apache/kafka/connect/sink/SinkRecord.html) object, which contains the Kafka message in the `value` field. When `aws.lambda.batch.enabled` is `true`, the invocation payload is an array of these records.
 
-Example payload for a SinkRecord for both `PlainPayloadFormatter` and `JsonPayloadFormatter` are illustrated below:
+Example payloads for a SinkRecord with a simple string for a key and an Avro record for the value are illustrated below.
 
 ### PlainPayloadFormatter
+
+This example uses the following (partial) connector configuration which defaults to `payload.formatter=com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter`:
+
+```json
+key.converter=org.apache.kafka.connect.storage.StringConverter
+value.converter=io.confluent.connect.avro.AvroConverter
+aws.lambda.batch.enabled=false
+```
+
+Expected output:
+
+
 ```json
 {
     "key": "string-avro_key",
@@ -98,7 +110,7 @@ Example payload for a SinkRecord for both `PlainPayloadFormatter` and `JsonPaylo
 
 ### JsonPayloadFormatter
 
-This example uses the following (partial) connector configuration with a SinkRecord String key and an Avro record for value with key and value schema visibility as `min` (the default):
+This example uses the following (partial) connector configuration with key and value schema visibility as `min` (the default):
 
 ```json
 key.converter=org.apache.kafka.connect.storage.StringConverter
@@ -107,7 +119,10 @@ aws.lambda.batch.enabled=false
 payload.formatter.class=com.nordstrom.kafka.connect.formatters.JsonPayloadFormatter
 ```
 
+Expected output:
+
 ```json
+{
     "key": "string-avro_key",
     "keySchemaName": null,
     "keySchemaVersion": null,
