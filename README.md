@@ -79,9 +79,10 @@ By supplying `com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider`
 
 The default invocation payload is a JSON representation of a [SinkRecord](https://kafka.apache.org/21/javadoc/org/apache/kafka/connect/sink/SinkRecord.html) object, which contains the Kafka message in the `value` field. When `aws.lambda.batch.enabled` is `true`, the invocation payload is an array of these records.
 
-Example payloads for a SinkRecord with a simple string for a key and an Avro record for the value are illustrated below.
+## Avro schema
 
-The Avro schema for this is:
+This simple schema record describes our "hello, world" message.
+
 
 ```
 {
@@ -95,18 +96,12 @@ The Avro schema for this is:
       "type": {
         "type": "enum",
         "name": "language",
-        "doc": "The language used to write the `greeting`.",
-        "symbols": [
-          "ENGLISH",
-          "FRENCH",
-          "ITALIAN",
-          "SPANISH"
+        "symbols": [ "ENGLISH", "FRENCH", "ITALIAN", "SPANISH"
         ]
       }
     },
     {
       "name": "greeting",
-      "doc": "The greeting as written in the current `language`.",
       "type": "string"
     }
   ]
