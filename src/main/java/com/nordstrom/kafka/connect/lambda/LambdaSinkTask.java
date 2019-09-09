@@ -3,7 +3,6 @@ package com.nordstrom.kafka.connect.lambda;
 import com.nordstrom.kafka.connect.About;
 import com.nordstrom.kafka.connect.formatters.PayloadFormatter;
 import com.nordstrom.kafka.connect.formatters.PayloadFormattingException;
-import com.nordstrom.kafka.connect.utils.JsonUtil;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
@@ -15,11 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -179,7 +174,9 @@ public class LambdaSinkTask extends SinkTask {
 
   private String getPayload(final SinkRecord record) {
     try {
-      return this.payloadFormatter.format(record);
+      final String formatted = payloadFormatter.format(record);
+      LOGGER.debug("formatted-payload:|{}|", formatted);
+      return formatted;
     } catch (final PayloadFormattingException e) {
       throw new DataException("Record could not be formatted.", e);
     }
@@ -187,7 +184,7 @@ public class LambdaSinkTask extends SinkTask {
 
   private String getPayload(final Collection<SinkRecord> records) {
     try {
-      return this.payloadFormatter.formatBatch(records);
+      return this.payloadFormatter.format(records);
     } catch (final PayloadFormattingException e) {
       throw new DataException("Records could not be formatted.", e);
     }

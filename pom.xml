@@ -5,7 +5,7 @@
 
     <groupId>com.nordstrom.kafka.connect.lambda</groupId>
     <artifactId>kafka-connect-lambda</artifactId>
-    <version>1.0.4</version>
+    <version>1.1.0</version>
 
     <name>kafka-connect-lambda</name>
     <description>A Kafka Connect Connector for kafka-connect-lambda</description>
@@ -15,18 +15,48 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
 
-        <kafka.connect-api.version>2.1.0</kafka.connect-api.version>
+        <slf4j.version>1.7.25</slf4j.version>
+
+        <kafka-connect.version>2.1.0</kafka-connect.version>
+        <!-- NB: must be consistent with version in kafka-connect -->
+        <jackson.version>2.9.6</jackson.version>
         <aws-java-sdk.version>1.11.592</aws-java-sdk.version>
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.28.2</mockito-core.version>
         <google.guava.version>19.0</google.guava.version>
+        <jackson.version>2.9.6</jackson.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>
-            <version>${kafka.connect-api.version}</version>
+            <version>${kafka-connect.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>connect-json</artifactId>
+            <version>${kafka-connect.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -54,6 +84,12 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${google.guava.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -143,6 +179,8 @@
                                     <exclude>org.apache.httpcomponents:*</exclude>
                                     <exclude>org.apache.kafka:*</exclude>
                                     <exclude>org.slf4j:*</exclude>
+                                    <exclude>com.fasterxml.jackson.core:*</exclude>
+                                    <exclude>javax.ws.rs:*</exclude>
                                 </excludes>
                             </artifactSet>
                         </configuration>

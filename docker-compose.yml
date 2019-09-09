@@ -46,6 +46,7 @@ services:
     depends_on: [broker]
     logging: { driver: none }
 
+  # NB: run connect locally in stand-alone mode to debug
   connect:
     image: confluentinc/cp-kafka-connect:5.1.3
     ports:

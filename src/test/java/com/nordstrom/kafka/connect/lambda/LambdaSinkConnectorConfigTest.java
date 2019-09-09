@@ -1,11 +1,11 @@
 package com.nordstrom.kafka.connect.lambda;
 
+import com.nordstrom.kafka.connect.formatters.JsonPayloadFormatter;
+import org.apache.kafka.common.config.ConfigException;
 import org.junit.Test;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter;
-import com.nordstrom.kafka.connect.lambda.InvocationMode;
-import com.nordstrom.kafka.connect.lambda.InvocationFailure;
 
 import static org.junit.Assert.*;
 
@@ -31,14 +31,17 @@ public class LambdaSinkConnectorConfigTest {
         assertNotNull(config.getInvocationTimeout());
         assertNotNull(config.getFailureMode());
         assertNotNull(config.getInvocationMode());
-        assertNotNull(config.getRetries());
         assertNotNull(config.getRetriableErrorCodes());
         assertNotNull(config.getIamRoleArn());
         assertNotNull(config.getIamExternalId());
         assertNotNull(config.getIamSessionName());
 
+        // Check defaults
         assertEquals(DefaultAWSCredentialsProviderChain.class, config.getAwsCredentialsProvider().getClass());
         assertEquals(PlainPayloadFormatter.class, config.getPayloadFormatter().getClass());
+        assertTrue(config.isBatchingEnabled());
+        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
     }
 
     @Test
@@ -64,9 +67,72 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals("PT0.123S", config.getInvocationTimeout().toString());
         assertEquals(InvocationMode.SYNC, config.getInvocationMode());
         assertEquals(InvocationFailure.DROP, config.getFailureMode());
-        assertEquals(true, config.isBatchingEnabled());
+        assertTrue(config.isBatchingEnabled());
         assertEquals(3, config.getRetriableErrorCodes().size());
         assertEquals(123, config.getRetryBackoffTimeMillis());
         assertEquals(123, config.getRetries());
     }
+
+    @Test
+    public void jsonPayloadFormatterConfig() {
+        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
+            new HashMap<String, String>() {
+                {
+                    put("name", "test-connector");
+                    put("aws.lambda.function.arn", "test-function");
+                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
+                }
+            });
+
+        assertEquals("test-connector", config.getConnectorName());
+        assertEquals(JsonPayloadFormatter.class, config.getPayloadFormatter().getClass());
+        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+    }
+
+    @Test
+    public void jsonPayloadFormatterKeySchemaVisibilityConfig() {
+        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
+            new HashMap<String, String>() {
+                {
+                    put("name", "test-connector");
+                    put("aws.lambda.function.arn", "test-function");
+                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
+                    put("payload.formatter.key.schema.visibility", "none");
+                }
+            });
+
+        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), "none");
+        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+    }
+
+    @Test
+    public void jsonPayloadFormatterValueSchemaVisibilityConfig() {
+        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
+            new HashMap<String, String>() {
+                {
+                    put("name", "test-connector");
+                    put("aws.lambda.function.arn", "test-function");
+                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
+                    put("payload.formatter.value.schema.visibility", "none");
+                }
+            });
+
+        assertEquals(config.getPayloadFormatterKeySchemaVisibility(), LambdaSinkConnectorConfig.PAYLOAD_FORMATTER_SCHEMA_VISIBILITY_DEFAULT);
+        assertEquals(config.getPayloadFormatterValueSchemaVisibility(), "none");
+    }
+
+    @Test(expected = ConfigException.class)
+    public void jsonPayloadFormatterSchemaVisibilityConfigValidatorThrowsException() {
+        LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(
+            new HashMap<String, String>() {
+                {
+                    put("name", "test-connector");
+                    put("aws.lambda.function.arn", "test-function");
+                    put("payload.formatter.class", JsonPayloadFormatter.class.getCanonicalName());
+                    put("payload.formatter.key.schema.visibility", "x-none");
+                }
+            });
+    }
+
 }

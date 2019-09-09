@@ -5,5 +5,5 @@ import org.apache.kafka.connect.sink.SinkRecord;
 
 public interface PayloadFormatter {
     String format(final SinkRecord record) throws PayloadFormattingException;
-    String formatBatch(final Collection<SinkRecord> records) throws PayloadFormattingException;
+    String format(final Collection<SinkRecord> records) throws PayloadFormattingException;
 }
