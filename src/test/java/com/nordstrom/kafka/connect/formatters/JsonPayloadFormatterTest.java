@@ -40,16 +40,11 @@ public class JsonPayloadFormatterTest {
   private static long TEST_OFFSET = 2L;
   private static long TEST_TIMESTAMP = 3L;
   private static String TEST_KEY_CLASS = TestKey.class.getCanonicalName();
-  private static String TEST_KEY_FIELD = "key_name";
-  private static String TEST_KEY_VALUE = "test-key";
   private static String TEST_KEY_JSON = "{\"key_name\" : \"test-key-json\"}";
-  private static Integer TEST_KEY_VERSION = 1234;
   private static String TEST_VALUE_CLASS = TestValue.class.getCanonicalName();
-  private static String TEST_VALUE_FIELD = "value_name";
   private static String TEST_VALUE = "test-value";
   private static String TEST_VALUE_KEY = "test-value-key";
   private static String TEST_VALUE_JSON = "{\"value_name\" : \"test-value-json\"}";
-  private static Integer TEST_VALUE_VERSION = 5678;
   private static String TEST_VALUE_LIST = "[" + TEST_VALUE + "]";
   private static String TEST_VALUE_MAP = "{" + TEST_VALUE_KEY + "=" + TEST_VALUE + "}";
   private static String KEY_SCHEMA_VISIBILITY_CONFIG = "formatter.key.schema.visibility";
@@ -74,17 +69,17 @@ public class JsonPayloadFormatterTest {
     keySchema = SchemaBuilder.struct()
         .name(TEST_KEY_CLASS)
         .field("key_name", Schema.STRING_SCHEMA)
-        .version(TEST_KEY_VERSION)
+        .version(1234)
         .build();
     valueSchema = SchemaBuilder.struct()
         .name(TEST_VALUE_CLASS)
-        .field(TEST_VALUE_FIELD, Schema.STRING_SCHEMA)
-        .version(TEST_VALUE_VERSION)
+        .field("value_name", Schema.STRING_SCHEMA)
+        .version(5678)
         .build();
     keyStruct = new Struct(keySchema)
-        .put(TEST_KEY_FIELD, TEST_KEY_VALUE);
+        .put("key_name", "test-key");
     valueStruct = new Struct(valueSchema)
-        .put(TEST_VALUE_FIELD, TEST_VALUE);
+        .put("value_name", TEST_VALUE);
     valueList = new ArrayList<>();
     valueList.add(TEST_VALUE);
     valueMap = new HashMap<>();
@@ -96,7 +91,9 @@ public class JsonPayloadFormatterTest {
   }
 
   //
-  // key/value combinations
+  // key/value test combinations.  A key or value can be of type null, string, serialized-json (still a string),
+  // integer/long, boolean, and Avro schema.  The naming convention for the test is:
+  //    test<key-type><value-type>SinkRecord.
   //
   @Test
   public void testAvroAvroSinkRecord() throws IOException {
@@ -111,10 +108,10 @@ public class JsonPayloadFormatterTest {
     // Only asserting on things that are addressed by the test.
     assertTrue(payload.getKey() instanceof HashMap);
     assertEquals(TEST_KEY_CLASS, payload.getKeySchemaName());
-    assertEquals(TEST_KEY_VERSION.toString(), payload.getKeySchemaVersion());
+    assertEquals(1234, Integer.parseInt(payload.getKeySchemaVersion()));
     assertTrue(payload.getValue() instanceof HashMap);
     assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
-    assertEquals(TEST_VALUE_VERSION.toString(), payload.getValueSchemaVersion());
+    assertEquals(5678, Integer.parseInt(payload.getValueSchemaVersion()));
   }
 
   @Test
@@ -131,12 +128,12 @@ public class JsonPayloadFormatterTest {
 
     // Only asserting on things that are addressed by the test.
     final Map<String, String> key = new HashMap<>();
-    key.put(TEST_KEY_FIELD, TEST_KEY_VALUE);
+    key.put("key_name", "test-key");
     assertEquals(key, payload.getKey());
     assertNull(payload.getKeySchemaName());
     assertNull(payload.getKeySchemaVersion());
     assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
-    assertEquals(TEST_VALUE_VERSION.toString(), payload.getValueSchemaVersion());
+    assertEquals(5678, Integer.parseInt(payload.getValueSchemaVersion()));
   }
 
   @Test
@@ -154,10 +151,10 @@ public class JsonPayloadFormatterTest {
     // Only asserting on things that are addressed by the test.
     assertTrue(payload.getKey() instanceof HashMap);
     assertEquals(TEST_KEY_CLASS, payload.getKeySchemaName());
-    assertEquals(TEST_KEY_VERSION.toString(), payload.getKeySchemaVersion());
+    assertEquals(1234, Integer.parseInt(payload.getKeySchemaVersion()));
     assertTrue(payload.getValue() instanceof HashMap);
     assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
-    assertEquals(TEST_VALUE_VERSION.toString(), payload.getValueSchemaVersion());
+    assertEquals(5678, Integer.parseInt(payload.getValueSchemaVersion()));
   }
 
   @Test
@@ -175,7 +172,7 @@ public class JsonPayloadFormatterTest {
     // Only asserting on things that are addressed by the test.
     assertTrue(payload.getKey() instanceof HashMap);
     assertEquals(TEST_KEY_CLASS, payload.getKeySchemaName());
-    assertEquals(TEST_KEY_VERSION.toString(), payload.getKeySchemaVersion());
+    assertEquals(1234, Integer.parseInt(payload.getKeySchemaVersion()));
     assertNull(payload.getValueSchemaName());
     assertNull(payload.getValueSchemaVersion());
   }
@@ -195,10 +192,10 @@ public class JsonPayloadFormatterTest {
     // Only asserting on things that are addressed by the test.
     assertTrue(payload.getKey() instanceof HashMap);
     assertEquals(TEST_KEY_CLASS, payload.getKeySchemaName());
-    assertEquals(TEST_KEY_VERSION.toString(), payload.getKeySchemaVersion());
+    assertEquals(1234, Integer.parseInt(payload.getKeySchemaVersion()));
     assertTrue(payload.getValue() instanceof HashMap);
     assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
-    assertEquals(TEST_VALUE_VERSION.toString(), payload.getValueSchemaVersion());
+    assertEquals(5678, Integer.parseInt(payload.getValueSchemaVersion()));
   }
 
   @Test
@@ -293,14 +290,14 @@ public class JsonPayloadFormatterTest {
 
   @Test
   public void testStringAvroSinkRecord() throws IOException {
-    final SinkRecord record = createSinkRecord(null, TEST_KEY_VALUE, valueSchema, valueStruct);
+    final SinkRecord record = createSinkRecord(null, "test-key", valueSchema, valueStruct);
     final String result = formatter.format(record);
     debugShow(record, result);
 
     Payload payload = new Payload<>();
     payload = mapper.readValue(result, payload.getClass());
 
-    assertEquals(TEST_KEY_VALUE, payload.getKey());
+    assertEquals("test-key", payload.getKey());
     assertNull(payload.getKeySchemaName());
     assertTrue(payload.getValue() instanceof HashMap);
     assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
@@ -308,14 +305,74 @@ public class JsonPayloadFormatterTest {
 
   @Test
   public void testStringJsonSinkRecord() throws IOException {
-    final SinkRecord record = createSinkRecord(null, TEST_KEY_VALUE, null, TEST_VALUE_JSON);
+    final SinkRecord record = createSinkRecord(null, "test-key", null, TEST_VALUE_JSON);
     final String result = formatter.format(record);
     debugShow(record, result);
 
     Payload payload = new Payload<>();
     payload = mapper.readValue(result, payload.getClass());
 
-    assertEquals(TEST_KEY_VALUE, payload.getKey());
+    assertEquals("test-key", payload.getKey());
+    assertNull(payload.getKeySchemaName());
+    assertEquals(TEST_VALUE_JSON, payload.getValue());
+    assertNull(payload.getValueSchemaName());
+  }
+
+  @Test
+  public void testIntegerJsonSinkRecord() throws IOException {
+    final SinkRecord record = createSinkRecord(null, 123, null, TEST_VALUE_JSON);
+    final String result = formatter.format(record);
+    debugShow(record, result);
+
+    Payload payload = new Payload<>();
+    payload = mapper.readValue(result, payload.getClass());
+
+    assertEquals(123, payload.getKey());
+    assertNull(payload.getKeySchemaName());
+    assertEquals(TEST_VALUE_JSON, payload.getValue());
+    assertNull(payload.getValueSchemaName());
+  }
+
+  @Test
+  public void testLongJsonSinkRecord() throws IOException {
+    final SinkRecord record = createSinkRecord(null, 123L, null, TEST_VALUE_JSON);
+    final String result = formatter.format(record);
+    debugShow(record, result);
+
+    Payload payload = new Payload<>();
+    payload = mapper.readValue(result, payload.getClass());
+
+    assertEquals(123L, Long.parseLong(payload.getKey().toString()));
+    assertNull(payload.getKeySchemaName());
+    assertEquals(TEST_VALUE_JSON, payload.getValue());
+    assertNull(payload.getValueSchemaName());
+  }
+
+  @Test
+  public void testFloatJsonSinkRecord() throws IOException {
+    final SinkRecord record = createSinkRecord(null, 123.45, null, TEST_VALUE_JSON);
+    final String result = formatter.format(record);
+    debugShow(record, result);
+
+    Payload payload = new Payload<>();
+    payload = mapper.readValue(result, payload.getClass());
+
+    assertEquals(123.45, Float.parseFloat(payload.getKey().toString()), 0.0001);
+    assertNull(payload.getKeySchemaName());
+    assertEquals(TEST_VALUE_JSON, payload.getValue());
+    assertNull(payload.getValueSchemaName());
+  }
+
+  @Test
+  public void testBooleanJsonSinkRecord() throws IOException {
+    final SinkRecord record = createSinkRecord(null, true, null, TEST_VALUE_JSON);
+    final String result = formatter.format(record);
+    debugShow(record, result);
+
+    Payload payload = new Payload<>();
+    payload = mapper.readValue(result, payload.getClass());
+
+    assertTrue(Boolean.parseBoolean(payload.getKey().toString()));
     assertNull(payload.getKeySchemaName());
     assertEquals(TEST_VALUE_JSON, payload.getValue());
     assertNull(payload.getValueSchemaName());
@@ -323,14 +380,14 @@ public class JsonPayloadFormatterTest {
 
   @Test
   public void testStringStringSinkRecord() throws IOException {
-    final SinkRecord record = createSinkRecord(null, TEST_KEY_VALUE, null, TEST_VALUE);
+    final SinkRecord record = createSinkRecord(null, "test-key", null, TEST_VALUE);
     final String result = formatter.format(record);
     debugShow(record, result);
 
     Payload payload = new Payload<>();
     payload = mapper.readValue(result, payload.getClass());
 
-    assertEquals(TEST_KEY_VALUE, payload.getKey());
+    assertEquals("test-key", payload.getKey());
     assertNull(payload.getKeySchemaName());
     assertNull(payload.getKeySchemaVersion());
     assertEquals(TEST_VALUE, payload.getValue());
@@ -341,7 +398,7 @@ public class JsonPayloadFormatterTest {
   @Test
   public void testStringStringSinkRecordKeyValueSchemaNone() throws IOException {
     // key and value schema should have no affect on plain string values.
-    final SinkRecord record = createSinkRecord(null, TEST_KEY_VALUE, null, TEST_VALUE);
+    final SinkRecord record = createSinkRecord(null, "test-key", null, TEST_VALUE);
     Map<String, String> map = new HashMap<>();
     map.put(KEY_SCHEMA_VISIBILITY_CONFIG, "none");
     map.put(VALUE_SCHEMA_VISIBILITY_CONFIG, "none");
@@ -352,7 +409,7 @@ public class JsonPayloadFormatterTest {
     Payload payload = new Payload<>();
     payload = mapper.readValue(result, payload.getClass());
 
-    assertEquals(TEST_KEY_VALUE, payload.getKey());
+    assertEquals("test-key", payload.getKey());
     assertNull(payload.getKeySchemaName());
     assertNull(payload.getKeySchemaVersion());
     assertEquals(TEST_VALUE, payload.getValue());
@@ -511,10 +568,10 @@ public class JsonPayloadFormatterTest {
     for (Payload payload : payloads) {
       assertTrue(payload.getKey() instanceof HashMap);
       assertEquals(TEST_KEY_CLASS, payload.getKeySchemaName());
-      assertEquals(TEST_KEY_VERSION.toString(), payload.getKeySchemaVersion());
+      assertEquals(1234, Integer.parseInt(payload.getKeySchemaVersion()));
       assertTrue(payload.getValue() instanceof HashMap);
       assertEquals(TEST_VALUE_CLASS, payload.getValueSchemaName());
-      assertEquals(TEST_VALUE_VERSION.toString(), payload.getValueSchemaVersion());
+      assertEquals(5678, Integer.parseInt(payload.getValueSchemaVersion()));
     }
   }
 

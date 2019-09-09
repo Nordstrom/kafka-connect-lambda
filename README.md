@@ -81,6 +81,39 @@ The default invocation payload is a JSON representation of a [SinkRecord](https:
 
 Example payloads for a SinkRecord with a simple string for a key and an Avro record for the value are illustrated below.
 
+The Avro schema for this is:
+
+```
+{
+  "type": "record",
+  "name": "Hello",
+  "doc": "An example Avro-encoded `Hello` message.",
+  "namespace": "com.nordstrom.kafka.example",
+  "fields": [
+    {
+      "name": "language",
+      "type": {
+        "type": "enum",
+        "name": "language",
+        "doc": "The language used to write the `greeting`.",
+        "symbols": [
+          "ENGLISH",
+          "FRENCH",
+          "ITALIAN",
+          "SPANISH"
+        ]
+      }
+    },
+    {
+      "name": "greeting",
+      "doc": "The greeting as written in the current `language`.",
+      "type": "string"
+    }
+  ]
+}
+
+```
+
 ### PlainPayloadFormatter
 
 This example uses the following (partial) connector configuration which defaults to `payload.formatter=com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter`:
