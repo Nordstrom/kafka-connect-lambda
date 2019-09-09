@@ -124,11 +124,11 @@ Expected output:
 
 ```json
 {
-    "key": "string-avro_key",
+    "key": "my_key",
     "keySchemaName": null,
-    "value": "Struct{language=ENGLISH,greeting=hello, (string-avro) world}",
+    "value": "Struct{language=ENGLISH,greeting=hello, world}",
     "valueSchemaName": "com.nordstrom.kafka.example.Hello",
-    "topic": "example-stream_string-avro",
+    "topic": "example-stream",
     "partition": 1,
     "offset": 0,
     "timestamp": 1567723257583,
@@ -151,16 +151,16 @@ Expected output:
 
 ```json
 {
-    "key": "string-avro_key",
+    "key": "my_key",
     "keySchemaName": null,
     "keySchemaVersion": null,
     "value": {
         "language": "ENGLISH",
-        "greeting": "hello, (string-avro) world"
+        "greeting": "hello, world"
     },
     "valueSchemaName": "com.nordstrom.kafka.example.Hello",
     "valueSchemaVersion": "1",
-    "topic": "example-stream_string-avro",
+    "topic": "example-stream",
     "partition": 1,
     "offset": 0,
     "timestamp": 1567723257583,
