@@ -83,15 +83,15 @@ public class AWSAssumeRoleCredentialsProvider implements AWSCredentialsProvider,
     }
   }
 
-  String getExternalId() {
+  public String getExternalId() {
     return this.externalId;
   }
 
-  String getRoleArn() {
+  public String getRoleArn() {
     return this.roleArn;
   }
 
-  String getSessionName() {
+  public String getSessionName() {
     return this.sessionName;
   }
 }

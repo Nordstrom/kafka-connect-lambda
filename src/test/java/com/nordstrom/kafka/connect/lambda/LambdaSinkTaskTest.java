@@ -45,16 +45,10 @@ public class LambdaSinkTaskTest {
 
         task.start(props);
 
-        assertFalse(task.configuration.isBatchingEnabled());
+        InvocationClient mockedClient = mock(InvocationClient.class);
 
-        AwsLambdaUtil mockedLambdaClient = mock(AwsLambdaUtil.class);
-
-        when(mockedLambdaClient.invoke(anyString(), anyObject(), anyObject(), eq(InvocationType.RequestResponse)))
-            .thenReturn(new AwsLambdaUtil(
-                new ClientConfiguration(),
-                new DefaultAWSCredentialsProviderChain(),
-                InvocationFailure.STOP)
-                    .new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
+        when(mockedClient.invoke(any()))
+            .thenReturn(new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
 
         Schema testSchema = SchemaBuilder.struct().name("com.nordstrom.kafka.connect.lambda.foo").field("bar", STRING_SCHEMA).build();
 

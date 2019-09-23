@@ -5,7 +5,6 @@ import com.nordstrom.kafka.connect.formatters.PayloadFormatter;
 import com.nordstrom.kafka.connect.formatters.PayloadFormattingException;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.InvalidConfigurationException;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -24,11 +23,15 @@ public class LambdaSinkTask extends SinkTask {
 
   private final Queue<SinkRecord> batchRecords = new ConcurrentLinkedQueue<>();
   private final AtomicInteger retryCount = new AtomicInteger(0);
-  private final int maxBatchSizeBytes = (6 * 1024 * 1024) - 1;
+  private final static int maxBatchSizeBytes = (6 * 1024 * 1024) - 1;
 
-  AwsLambdaUtil lambdaClient;
-  PayloadFormatter payloadFormatter;
-  LambdaSinkConnectorConfig configuration;
+  private String connectorName;
+  private InvocationClient invocationClient;
+  private PayloadFormatter payloadFormatter;
+  private Boolean isBatchingRecords;
+  private int maxRetryCount;
+  private long retryBackoffMs;
+  private Collection<Integer> retriableErrorCodes;
 
   @Override
   public String version() {
@@ -37,18 +40,20 @@ public class LambdaSinkTask extends SinkTask {
 
   @Override
   public void start(final Map<String, String> settings) {
-    this.configuration = new LambdaSinkConnectorConfig(settings);
+    LambdaSinkConnectorConfig config = new LambdaSinkConnectorConfig(settings);
+    this.connectorName = config.getConnectorName();
 
-    LOGGER.info("Starting lambda connector {} task.", this.configuration.getConnectorName());
+    LOGGER.info("Starting lambda connector {} task.", connectorName);
 
-    this.lambdaClient = new AwsLambdaUtil(
-        this.configuration.getAwsClientConfiguration(),
-        this.configuration.getAwsCredentialsProvider(),
-        this.configuration.getFailureMode());
-    this.payloadFormatter = this.configuration.getPayloadFormatter();
+    this.invocationClient = config.getInvocationClient();
+    this.payloadFormatter = config.getPayloadFormatter();
+    this.isBatchingRecords = config.isBatchingEnabled();
+    this.maxRetryCount = config.getRetries();
+    this.retryBackoffMs = config.getRetryBackoffTimeMillis();
+    this.retriableErrorCodes = config.getRetriableErrorCodes();
 
     LOGGER.info("Context for connector {} task, Assignments[{}], ",
-            this.configuration.getConnectorName(),
+            connectorName,
             this.context
                     .assignment()
                     .stream()
@@ -60,19 +65,18 @@ public class LambdaSinkTask extends SinkTask {
   @Override
   public void put(final Collection<SinkRecord> records) {
     if (records == null || records.isEmpty()) {
-      LOGGER.debug("No records to process.  connector=\"{}\"",
-              this.configuration.getConnectorName());
+      LOGGER.debug("No records to process.  connector=\"{}\"", this.connectorName);
       return;
     }
 
-    if (this.configuration.isBatchingEnabled()) {
+    if (this.isBatchingRecords) {
       this.batchRecords.addAll(records);
       final int batchLength = this.getPayload(this.batchRecords).getBytes().length;
       if (batchLength >= maxBatchSizeBytes) {
         LOGGER.warn("Batch size reached {} bytes within {} records. connector=\"{}\"",
                 batchLength,
                 this.batchRecords.size(),
-                this.configuration.getConnectorName());
+                this.connectorName);
         this.rinse();
         this.context.requestCommit();
       }
@@ -90,10 +94,6 @@ public class LambdaSinkTask extends SinkTask {
     this.rinse();
   }
 
-  public void setLambdaClient(AwsLambdaUtil lambdaClient) {
-    this.lambdaClient = lambdaClient;
-  }
-
   private void rinse() {
     final List<SinkRecord> records = new ArrayList<>(this.batchRecords);
 
@@ -102,7 +102,7 @@ public class LambdaSinkTask extends SinkTask {
       this.splitBatch(records, maxBatchSizeBytes)
               .forEach(recordsToFlush -> {
 
-                final AwsLambdaUtil.InvocationResponse response = this.invoke(this.getPayload(recordsToFlush));
+                final InvocationResponse response = this.invoke(this.getPayload(recordsToFlush));
 
                 final String responsesMsg = recordsToFlush.stream().map(r -> MessageFormat
                         .format(
@@ -114,9 +114,8 @@ public class LambdaSinkTask extends SinkTask {
                         .collect(Collectors.joining(" | "));
                 if (responsesMsg != null && !responsesMsg.isEmpty()) {
                   final String message = MessageFormat.format(
-                          "Response Summary Batch - arn=\"{0}\", connector=\"{1}\" recordcount=\"{3}\" responseCode=\"{4}\" response=\"{5}\" start=\"{6}\" durationtimemillis=\"{7}\" | {8}",
-                          this.configuration.getAwsFunctionArn(),
-                          this.configuration.getConnectorName(),
+                          "Response Summary Batch - connector=\"{0}\" recordcount=\"{1}\" responseCode=\"{2}\" response=\"{3}\" start=\"{4}\" durationtimemillis=\"{5}\" | {6}",
+                          this.connectorName,
                           recordsToFlush.size(),
                           response.getStatusCode(),
                           String.join(" : ", response.getResponseString(), response.getErrorString()),
@@ -126,19 +125,16 @@ public class LambdaSinkTask extends SinkTask {
                   LOGGER.info(message);
 
                   this.batchRecords.removeAll(recordsToFlush);
-
                 }
               });
+
       if (!this.batchRecords.isEmpty()) {
-        LOGGER.error(
-                "Race Condition Found between sinkConnector.put() and sinkConnector.flush() connector=\"{}\"",
-                this.configuration.getConnectorName());
+        LOGGER.error("Race Condition Found between sinkConnector.put() and sinkConnector.flush() connector=\"{}\"", this.connectorName);
       }
 
     }
     else {
-      LOGGER.info("No records sent in the flush cycle. connector=\"{}\"",
-              this.configuration.getConnectorName());
+      LOGGER.info("No records sent in the flush cycle. connector=\"{}\"", connectorName);
     }
     this.context.requestCommit();
   }
@@ -190,35 +186,8 @@ public class LambdaSinkTask extends SinkTask {
     }
   }
 
-  private AwsLambdaUtil.InvocationResponse invoke(final String payload) {
-
-    final AwsLambdaUtil.InvocationResponse response;
-    switch (this.configuration.getInvocationMode()) {
-
-      case ASYNC:
-
-        response = this.lambdaClient.invokeAsync(
-                this.configuration.getAwsFunctionArn(),
-                payload.getBytes(),
-                this.configuration.getInvocationTimeout()
-        );
-        break;
-
-      case SYNC:
-        response = this.lambdaClient.invokeSync(
-                this.configuration.getAwsFunctionArn(),
-                payload.getBytes(),
-                this.configuration.getInvocationTimeout()
-        );
-        break;
-
-      default:
-        final String message = MessageFormat.format("The {} {} is not defined.",
-                LambdaSinkConnectorConfig.ConfigurationKeys.AWS_LAMBDA_INVOCATION_MODE.getValue(),
-                this.configuration.getInvocationMode());
-        throw new InvalidConfigurationException(message);
-    }
-
+  private InvocationResponse invoke(final String payload) {
+    final InvocationResponse response = invocationClient.invoke(payload.getBytes());
     final String traceMessage = MessageFormat
             .format("AWS LAMBDA response {0} {1} {2}.",
                     response.getStatusCode(),
@@ -227,13 +196,13 @@ public class LambdaSinkTask extends SinkTask {
             );
     LOGGER.trace(traceMessage);
 
-    this.handleResponse(response, this.retryCount, this.configuration.getRetriableErrorCodes(),
-            this.configuration.getRetries(), this.configuration.getRetryBackoffTimeMillis());
+    this.handleResponse(response, this.retryCount,
+        this.retriableErrorCodes, this.maxRetryCount, this.retryBackoffMs);
     return response;
   }
 
   private void handleResponse(
-          final AwsLambdaUtil.InvocationResponse response,
+          final InvocationResponse response,
           final AtomicInteger retryCount,
           final Collection<Integer> retriableErrorCodes,
           final int maxRetries,
@@ -265,7 +234,7 @@ public class LambdaSinkTask extends SinkTask {
                 );
         LOGGER.warn(message);
         retryCount.incrementAndGet();
-        this.context.timeout(this.configuration.getRetryBackoffTimeMillis());
+        this.context.timeout(backoffTimeMs);
         throw new RetriableException(message);
       }
 
@@ -283,7 +252,7 @@ public class LambdaSinkTask extends SinkTask {
 
   @Override
   public void stop() {
-    LOGGER.info("Stopping lambda connector {} task.", this.configuration.getConnectorName());
+    LOGGER.info("Stopping lambda connector {} task.", this.connectorName);
   }
 
   private class OutOfRetriesException extends RuntimeException {
