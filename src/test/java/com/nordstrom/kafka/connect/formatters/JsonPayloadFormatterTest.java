@@ -47,8 +47,8 @@ public class JsonPayloadFormatterTest {
   private static String TEST_VALUE_JSON = "{\"value_name\" : \"test-value-json\"}";
   private static String TEST_VALUE_LIST = "[" + TEST_VALUE + "]";
   private static String TEST_VALUE_MAP = "{" + TEST_VALUE_KEY + "=" + TEST_VALUE + "}";
-  private static String KEY_SCHEMA_VISIBILITY_CONFIG = "formatter.key.schema.visibility";
-  private static String VALUE_SCHEMA_VISIBILITY_CONFIG = "formatter.value.schema.visibility";
+  private static String KEY_SCHEMA_VISIBILITY_CONFIG = "key.schema.visibility";
+  private static String VALUE_SCHEMA_VISIBILITY_CONFIG = "value.schema.visibility";
 
   private static class TestKey {
     public String key_name;

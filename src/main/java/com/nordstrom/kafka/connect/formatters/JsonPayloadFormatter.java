@@ -18,12 +18,6 @@ import java.util.Map;
 import static java.util.Collections.emptyMap;
 
 public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
-  enum SchemaVisibility {
-    ALL,
-    MIN,
-    NONE
-  }
-
   private final ObjectWriter recordWriter = new ObjectMapper().writerFor(Payload.class);
   private final ObjectWriter recordsWriter = new ObjectMapper().writerFor(Payload[].class);
   private final JsonConverter converter = new JsonConverter();
@@ -44,8 +38,8 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
 
   @Override
   public void configure(Map<String, ?> configs) {
-    keySchemaVisibility = configureSchemaVisibility(configs, "formatter.key.schema.visibility");
-    valueSchemaVisibility = configureSchemaVisibility(configs, "formatter.value.schema.visibility");
+    keySchemaVisibility = configureSchemaVisibility(configs, "key.schema.visibility");
+    valueSchemaVisibility = configureSchemaVisibility(configs, "value.schema.visibility");
   }
 
   private SchemaVisibility configureSchemaVisibility(final Map<String, ?> configs, final String key) {
@@ -66,6 +60,14 @@ public class JsonPayloadFormatter implements PayloadFormatter, Configurable {
     }
 
     return viz;
+  }
+
+  public SchemaVisibility getKeySchemaVisibility() {
+    return keySchemaVisibility;
+  }
+
+  public SchemaVisibility getValueSchemaVisibility() {
+    return valueSchemaVisibility;
   }
 
   public String format(final SinkRecord record) {
