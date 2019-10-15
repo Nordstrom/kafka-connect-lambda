@@ -5,7 +5,7 @@
 
     <groupId>com.nordstrom.kafka.connect.lambda</groupId>
     <artifactId>kafka-connect-lambda</artifactId>
-    <version>1.1.1</version>
+    <version>2.3.0</version>
 
     <name>kafka-connect-lambda</name>
     <description>A Kafka Connect Connector for kafka-connect-lambda</description>
@@ -17,14 +17,13 @@
 
         <slf4j.version>1.7.25</slf4j.version>
 
-        <kafka-connect.version>2.1.0</kafka-connect.version>
+        <kafka-connect.version>2.3.0</kafka-connect.version>
         <!-- NB: must be consistent with version in kafka-connect -->
         <jackson.version>2.9.6</jackson.version>
         <aws-java-sdk.version>1.11.592</aws-java-sdk.version>
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.28.2</mockito-core.version>
         <google.guava.version>19.0</google.guava.version>
-        <jackson.version>2.9.6</jackson.version>
     </properties>
 
     <dependencies>
