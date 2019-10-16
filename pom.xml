@@ -5,7 +5,7 @@
 
     <groupId>com.nordstrom.kafka.connect.lambda</groupId>
     <artifactId>kafka-connect-lambda</artifactId>
-    <version>2.3.0</version>
+    <version>1.2.0</version>
 
     <name>kafka-connect-lambda</name>
     <description>A Kafka Connect Connector for kafka-connect-lambda</description>
@@ -20,12 +20,27 @@
         <kafka-connect.version>2.3.0</kafka-connect.version>
         <!-- NB: must be consistent with version in kafka-connect -->
         <jackson.version>2.9.6</jackson.version>
-        <aws-java-sdk.version>1.11.592</aws-java-sdk.version>
+        <aws-java-sdk.version>1.11.651</aws-java-sdk.version>
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.28.2</mockito-core.version>
         <google.guava.version>19.0</google.guava.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!--
+            By using the BOM, we use aws sdk components that are compatible with each other and don't need to
+            specify their versions.
+            -->
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-bom</artifactId>
+                <version>${aws-java-sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -57,15 +72,18 @@
             <artifactId>jackson-dataformat-cbor</artifactId>
             <version>${jackson.version}</version>
         </dependency>
+        <!--
+         NB: aws-java-sdk-lambda defines the org.apache.httpcomponents httpclient, httpcore versions.
+         DO NOT exclude in shade. Kafka Connect will default to versions < 4.5.9 which result in
+         InvalidSignatureException
+         -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-lambda</artifactId>
-            <version>${aws-java-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
-            <version>${aws-java-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -175,7 +193,6 @@
                                     <!-- provided by kafka-connect -->
                                     <exclude>commons-codec:*</exclude>
                                     <exclude>commons-logging:*</exclude>
-                                    <exclude>org.apache.httpcomponents:*</exclude>
                                     <exclude>org.apache.kafka:*</exclude>
                                     <exclude>org.slf4j:*</exclude>
                                     <exclude>com.fasterxml.jackson.core:*</exclude>
