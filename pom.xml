@@ -72,11 +72,6 @@
             <artifactId>jackson-dataformat-cbor</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        <!--
-         NB: aws-java-sdk-lambda defines the org.apache.httpcomponents httpclient, httpcore versions.
-         DO NOT exclude in shade. Kafka Connect will default to versions < 4.5.9 which result in
-         InvalidSignatureException
-         -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-lambda</artifactId>

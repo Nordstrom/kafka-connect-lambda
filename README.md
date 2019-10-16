@@ -9,10 +9,7 @@ A Kafka Connect sink plugin to invoke AWS Lambda functions.
 |1.1.1|2.1.0|1.11.592|
 |1.2.0|2.3.0|1.11.651|
 
-NB: Due to a compatibility issue with Apache httpcomponents, kafka-connect-lambda-1.1.1 will NOT work with
-Confluent/kafka-connect-5.3.1 (API 2.3.0).
-
-Use kafka-connect-lambda-1.2.0 instead which should work with Confluent 5.2.1+.
+Due to a compatibility issue with [Apache httpcomponents](http://hc.apache.org/), connector versions 1.1.1 and earlier may not work with Kafka Connect versions greater than 2.2
 
 # Building
 
