@@ -2,6 +2,15 @@
 
 A Kafka Connect sink plugin to invoke AWS Lambda functions.
 
+## Compatibility Matrix
+|kafka-connect-lambda|Kafka Connect API|AWS SDK|
+|:---|:---|:---|
+|1.1.0|2.2.0|1.11.592|
+|1.1.1|2.2.0|1.11.592|
+|1.2.0|2.3.0|1.11.651|
+
+Due to a compatibility issue with [Apache httpcomponents](http://hc.apache.org/), connector versions 1.1.1 and earlier may not work with Kafka Connect versions greater than 2.2
+
 # Building
 
 Build the connector with Maven using the standard lifecycle goals:
