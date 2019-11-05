@@ -20,8 +20,6 @@ mvn clean
 mvn package
 ```
 
-_The `kafka-connect-lambda` connector has been tested with `connect-api:2.1.0` and `aws-java-sdk-lambda:1.11.592`_
-
 # Configuring
 
 In addition to the standard [Kafka Connect connector configuration](https://kafka.apache.org/documentation/#connect_configuring) properties, the `kafka-connect-lambda` properties available are:
