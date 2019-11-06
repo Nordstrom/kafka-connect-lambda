@@ -70,6 +70,7 @@ services:
     - KAFKA_LOG4J_OPTS=-Dlog4j.configuration=file:/etc/log4j.properties
 
     - AWS_PROFILE
+    - AWS_REGION
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
     volumes:
