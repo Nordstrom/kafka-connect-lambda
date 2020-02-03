@@ -216,7 +216,7 @@ public class LambdaSinkTask extends SinkTask {
         // is a retriable error
         if (retryCount.get() > maxRetries) {
           final String message = MessageFormat
-                  .format("OutOfRetriesError with last call {} {} {}",
+                  .format("OutOfRetriesError with last call {0} {1} {2}",
                           response.getStatusCode(),
                           response.getErrorString(),
                           response.getResponseString()
@@ -226,7 +226,7 @@ public class LambdaSinkTask extends SinkTask {
         } //else
 
         final String message = MessageFormat
-                .format("Retriable Error with last call {} {} {} - retying in {} ms",
+                .format("Retriable Error with last call {0} {1} {2} - retying in {3} ms",
                         response.getStatusCode(),
                         response.getErrorString(),
                         response.getResponseString(),
@@ -240,7 +240,7 @@ public class LambdaSinkTask extends SinkTask {
 
       // NOT retrying -> data loss
       final String message = MessageFormat
-              .format("Non-retriable Error with last call {} {} {} ",
+              .format("Non-retriable Error with last call {0} {1} {2} ",
                       response.getStatusCode(),
                       response.getErrorString(),
                       response.getResponseString()
