@@ -209,8 +209,8 @@ public class LambdaSinkTask extends SinkTask {
           final long backoffTimeMs) {
 
     String functionError = response.getErrorString();
-    // When the function execution fails the Lambda responds by setting either of these values
     if (! functionError.isEmpty()) {
+      //function-error
       throw new FunctionExecutionException(MessageFormat
               .format("Lambda function execution failed. Reason: {0}: {1}",
                       response.getErrorString(),
