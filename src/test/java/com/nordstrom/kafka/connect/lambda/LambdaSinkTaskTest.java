@@ -48,7 +48,7 @@ public class LambdaSinkTaskTest {
         InvocationClient mockedClient = mock(InvocationClient.class);
 
         when(mockedClient.invoke(any()))
-            .thenReturn(new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
+            .thenReturn(new InvocationResponse(200, "test log", "", null, Instant.now(), Instant.now()));
 
         Schema testSchema = SchemaBuilder.struct().name("com.nordstrom.kafka.connect.lambda.foo").field("bar", STRING_SCHEMA).build();
 

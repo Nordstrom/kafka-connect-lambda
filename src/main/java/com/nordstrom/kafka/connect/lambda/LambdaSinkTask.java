@@ -207,12 +207,14 @@ public class LambdaSinkTask extends SinkTask {
           final Collection<Integer> retriableErrorCodes,
           final int maxRetries,
           final long backoffTimeMs) {
+
     String functionError = response.getErrorString();
     // When the function execution fails the Lambda responds by setting either of these values
     if (functionError.equals("Unhandled") || functionError.equals("Handled")) {
       throw new FunctionExecutionException(MessageFormat
-              .format("Lambda function execution failed. Msg: {0}",
-                      functionError
+              .format("Lambda function execution failed. Reason: {0}: {1}",
+                      response.getErrorString(),
+                      response.getErrorDescription()
               ));
     } else if (response.getStatusCode() < 300 && response.getStatusCode() >= 200) {
       //success
@@ -267,6 +269,7 @@ public class LambdaSinkTask extends SinkTask {
       super(message);
     }
   }
+
   protected static class FunctionExecutionException extends RuntimeException {
     FunctionExecutionException(final String message) {
       super(message);
