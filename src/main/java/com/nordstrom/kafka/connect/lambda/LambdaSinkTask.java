@@ -210,7 +210,7 @@ public class LambdaSinkTask extends SinkTask {
 
     String functionError = response.getErrorString();
     // When the function execution fails the Lambda responds by setting either of these values
-    if (functionError.equals("Unhandled") || functionError.equals("Handled")) {
+    if (! functionError.isEmpty()) {
       throw new FunctionExecutionException(MessageFormat
               .format("Lambda function execution failed. Reason: {0}: {1}",
                       response.getErrorString(),
