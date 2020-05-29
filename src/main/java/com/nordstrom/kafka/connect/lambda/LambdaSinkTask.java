@@ -209,7 +209,7 @@ public class LambdaSinkTask extends SinkTask {
           final long backoffTimeMs) {
 
     String functionError = response.getErrorString();
-    if (! functionError.isEmpty()) {
+    if (functionError != null && !functionError.isEmpty()) {
       //function-error
       throw new FunctionExecutionException(MessageFormat
               .format("Lambda function execution failed. Reason: {0}: {1}",

@@ -80,7 +80,7 @@ public class LambdaSinkTaskTest {
     public void testHandleResponseWhenFunctionInvocationAndExecutionSucceeds() {
 
         LambdaSinkTask task = new LambdaSinkTask();
-        InvocationResponse invocationResponse = new InvocationResponse(200, "test log", "", null, Instant.now(), Instant.now());
+        InvocationResponse invocationResponse = new InvocationResponse(200, "test log", null, null, Instant.now(), Instant.now());
         AtomicInteger retryCounter = new AtomicInteger(2);
 
         task.handleResponse(invocationResponse, retryCounter, Arrays.asList(501,504), 3, 1L);
