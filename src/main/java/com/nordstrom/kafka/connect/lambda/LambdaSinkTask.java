@@ -201,7 +201,7 @@ public class LambdaSinkTask extends SinkTask {
     return response;
   }
 
-  private void handleResponse(
+  void handleResponse(
           final InvocationResponse response,
           final AtomicInteger retryCount,
           final Collection<Integer> retriableErrorCodes,
