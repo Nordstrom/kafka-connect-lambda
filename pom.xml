@@ -19,7 +19,7 @@
 
         <kafka-connect.version>2.3.0</kafka-connect.version>
         <!-- NB: must be consistent with version in kafka-connect -->
-        <jackson.version>2.10.0</jackson.version>
+        <jackson.version>2.11.4</jackson.version>
         <aws-java-sdk.version>1.11.651</aws-java-sdk.version>
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.28.2</mockito-core.version>
