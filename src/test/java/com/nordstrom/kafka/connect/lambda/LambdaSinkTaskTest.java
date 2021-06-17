@@ -9,15 +9,19 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTaskContext;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.kafka.connect.data.Schema.STRING_SCHEMA;
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,7 +52,7 @@ public class LambdaSinkTaskTest {
         InvocationClient mockedClient = mock(InvocationClient.class);
 
         when(mockedClient.invoke(any()))
-            .thenReturn(new InvocationResponse(200, "test log", "", Instant.now(), Instant.now()));
+            .thenReturn(new InvocationResponse(200, "test log", "", null, Instant.now(), Instant.now()));
 
         Schema testSchema = SchemaBuilder.struct().name("com.nordstrom.kafka.connect.lambda.foo").field("bar", STRING_SCHEMA).build();
 
@@ -58,4 +62,30 @@ public class LambdaSinkTaskTest {
 
         task.put(testList);
     }
+
+    @Test(expected = LambdaSinkTask.FunctionExecutionException.class)
+    public void testHandleResponseWhenFunctionExecutionFails() {
+
+        LambdaSinkTask task = new LambdaSinkTask();
+
+        String msg = "{\"errorMessage\": \"foo\", \"errorType\": \"ValueError\", \"stackTrace\": [\"  File \\\"/var/task/lambda_function.py\\\", line 5, in lambda_handler\\n    raise ValueError(\\\"foo\\\")\\n\"]}";
+        ByteBuffer errorDescription = ByteBuffer.wrap(msg.getBytes(StandardCharsets.UTF_8));
+        InvocationResponse invocationResponse = new InvocationResponse(200, "test log", "Unhandled", errorDescription, Instant.now(), Instant.now());
+
+        task.handleResponse(invocationResponse, new AtomicInteger(0), Arrays.asList(501,504), 3, 1L);
+
+    }
+
+    @Test
+    public void testHandleResponseWhenFunctionInvocationAndExecutionSucceeds() {
+
+        LambdaSinkTask task = new LambdaSinkTask();
+        InvocationResponse invocationResponse = new InvocationResponse(200, "test log", null, null, Instant.now(), Instant.now());
+        AtomicInteger retryCounter = new AtomicInteger(2);
+
+        task.handleResponse(invocationResponse, retryCounter, Arrays.asList(501,504), 3, 1L);
+
+        Assert.assertEquals(0, retryCounter.intValue());
+    }
+
 }

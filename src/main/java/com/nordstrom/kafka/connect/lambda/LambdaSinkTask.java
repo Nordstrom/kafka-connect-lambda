@@ -201,13 +201,22 @@ public class LambdaSinkTask extends SinkTask {
     return response;
   }
 
-  private void handleResponse(
+  void handleResponse(
           final InvocationResponse response,
           final AtomicInteger retryCount,
           final Collection<Integer> retriableErrorCodes,
           final int maxRetries,
           final long backoffTimeMs) {
-    if (response.getStatusCode() < 300 && response.getStatusCode() >= 200) {
+
+    String functionError = response.getErrorString();
+    if (functionError != null && !functionError.isEmpty()) {
+      //function-error
+      throw new FunctionExecutionException(MessageFormat
+              .format("Lambda function execution failed. Reason: {0}: {1}",
+                      response.getErrorString(),
+                      response.getErrorDescription()
+              ));
+    } else if (response.getStatusCode() < 300 && response.getStatusCode() >= 200) {
       //success
       retryCount.set(0);
     } else {
@@ -257,6 +266,12 @@ public class LambdaSinkTask extends SinkTask {
 
   private class OutOfRetriesException extends RuntimeException {
     OutOfRetriesException(final String message) {
+      super(message);
+    }
+  }
+
+  protected static class FunctionExecutionException extends RuntimeException {
+    FunctionExecutionException(final String message) {
       super(message);
     }
   }
