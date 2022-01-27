@@ -190,8 +190,6 @@
                                     <exclude>mockito-all:*</exclude>
 
                                     <!-- provided by kafka-connect -->
-                                    <exclude>commons-codec:*</exclude>
-                                    <exclude>commons-logging:*</exclude>
                                     <exclude>org.slf4j:*</exclude>
                                     <exclude>javax.ws.rs:*</exclude>
                                 </excludes>
