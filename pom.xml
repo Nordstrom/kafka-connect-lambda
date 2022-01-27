@@ -17,8 +17,7 @@
 
         <slf4j.version>1.7.25</slf4j.version>
 
-        <kafka-connect.version>2.7.2</kafka-connect.version>
-        <!-- NB: must be consistent with version in kafka-connect -->
+        <kafka-connect.version>2.8.1</kafka-connect.version>
         <jackson.version>2.12.6</jackson.version>
         <aws-java-sdk.version>1.11.651</aws-java-sdk.version>
         <junit.version>4.13.1</junit.version>
@@ -221,6 +220,5 @@
         <name>Nordstrom, Inc.</name>
         <url>https://www.nordstrom.com</url>
     </organization>
-
 
 </project>
