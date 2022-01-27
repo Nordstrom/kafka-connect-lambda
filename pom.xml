@@ -19,8 +19,8 @@
 
         <kafka-connect.version>2.8.1</kafka-connect.version>
         <jackson.version>2.12.6</jackson.version>
-        <aws-java-sdk.version>1.11.651</aws-java-sdk.version>
-        <junit.version>4.13.1</junit.version>
+        <aws-java-sdk.version>1.11.1034</aws-java-sdk.version>
+        <junit.version>4.13.2</junit.version>
         <mockito-core.version>2.28.2</mockito-core.version>
         <google.guava.version>30.1.1-jre</google.guava.version>
     </properties>
