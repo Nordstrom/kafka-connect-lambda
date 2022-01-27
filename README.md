@@ -8,6 +8,7 @@ A Kafka Connect sink plugin to invoke AWS Lambda functions.
 |1.1.0|2.2.0|1.11.592|
 |1.1.1|2.2.0|1.11.592|
 |1.2.0|2.3.0|1.11.651|
+|1.3.0|2.8.1|1.11.1034|
 
 Due to a compatibility issue with [Apache httpcomponents](http://hc.apache.org/), connector versions 1.1.1 and earlier may not work with Kafka Connect versions greater than 2.2
 
