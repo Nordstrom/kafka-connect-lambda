@@ -27,7 +27,7 @@ public class InvocationClientConfigTest {
         assertEquals(InvocationMode.SYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.STOP, builder.getFailureMode());
         assertEquals(Duration.ofMinutes(5), builder.getInvocationTimeout());
-        assertNotNull(builder.getClientConfiguration());
+        assertNull(builder.getEndpoint());
         assertEquals(DefaultAWSCredentialsProviderChain.class, builder.getCredentialsProvider().getClass());
     }
 
@@ -55,7 +55,7 @@ public class InvocationClientConfigTest {
         assertEquals(123, builder.getInvocationTimeout().toMillis());
         assertEquals(InvocationMode.SYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.DROP, builder.getFailureMode());
-        assertNotNull(builder.getClientConfiguration());
+        assertNull(builder.getEndpoint());
 
         assertEquals(AWSAssumeRoleCredentialsProvider.class, builder.getCredentialsProvider().getClass());
         AWSAssumeRoleCredentialsProvider credentialsProvider = (AWSAssumeRoleCredentialsProvider)builder.getCredentialsProvider();
@@ -76,4 +76,3 @@ public class InvocationClientConfigTest {
             .ensureValid("invocation.failure.mode", "foo");
     }
 }
-

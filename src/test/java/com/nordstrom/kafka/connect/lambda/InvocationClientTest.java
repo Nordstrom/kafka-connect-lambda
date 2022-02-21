@@ -1,6 +1,6 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.amazonaws.ClientConfiguration;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.lambda.model.InvocationType;
@@ -21,13 +21,13 @@ public class InvocationClientTest {
         assertEquals(InvocationMode.SYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.STOP, builder.getFailureMode());
         assertEquals(Duration.ofMinutes(5), builder.getInvocationTimeout());
-        assertNull(builder.getClientConfiguration());
+        assertNull(builder.getEndpoint());
         assertNull(builder.getCredentialsProvider());
     }
 
     @Test
     public void testBuilderReflexiveProperties() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        EndpointConfiguration endpointConfiguration = new EndpointConfiguration("http://fake.com", "us-test-region");
         AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 
         InvocationClient.Builder builder = new InvocationClient.Builder()
@@ -36,7 +36,7 @@ public class InvocationClientTest {
             .setInvocationMode(InvocationMode.ASYNC)
             .setFailureMode(InvocationFailure.DROP)
             .setInvocationTimeout(Duration.ofSeconds(123))
-            .withClientConfiguration(clientConfiguration)
+            .withEndpointConfiguration(endpointConfiguration)
             .withCredentialsProvider(credentialsProvider);
 
         assertEquals("test-function-arn", builder.getFunctionArn());
@@ -44,7 +44,7 @@ public class InvocationClientTest {
         assertEquals(InvocationMode.ASYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.DROP, builder.getFailureMode());
         assertEquals(Duration.ofSeconds(123), builder.getInvocationTimeout());
-        assertSame(clientConfiguration, builder.getClientConfiguration());
+        assertSame(endpointConfiguration, builder.getEndpoint());
         assertSame(credentialsProvider, builder.getCredentialsProvider());
     }
 
