@@ -7,7 +7,7 @@ import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.errors.ConnectException;
 
-import com.amazonaws.ClientConfiguration;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
@@ -35,8 +35,6 @@ public class InvocationClientConfig extends AbstractConfig {
     // Client configuration properties
     static final String HTTP_PROXY_HOST_KEY = "http.proxy.host";
     static final String HTTP_PROXY_HOST_DOC = "HTTP proxy host to use when invoking the Lambda API";
-    static final String HTTP_PROXY_PORT_KEY = "http.proxy.port";
-    static final String HTTP_PROXY_PORT_DOC = "HTTP proxy port to use when invoking the Lambda API";
 
     // Authentication properties
     static final String CREDENTIALS_PROVIDER_CONFIG_PREFIX = "aws.credentials.provider.";
@@ -63,11 +61,12 @@ public class InvocationClientConfig extends AbstractConfig {
             .setInvocationMode(InvocationMode.valueOf(getString(INVOCATION_MODE_KEY)))
             .setInvocationTimeout(Duration.ofMillis(getLong(INVOCATION_TIMEOUT_KEY)))
             .setFailureMode(InvocationFailure.valueOf(getString(FAILURE_MODE_KEY)))
-            .withClientConfiguration(loadAwsClientConfiguration())
+            .withEndpointConfiguration(loadAwsEndpointConfiguration())
             .withCredentialsProvider(loadAwsCredentialsProvider());
 
         String awsRegion = getString(AWS_REGION_KEY);
-        if (awsRegion != null)
+        String proxyHost = getString(HTTP_PROXY_HOST_KEY);
+        if (awsRegion != null && proxyHost == null)
             builder.setRegion(awsRegion);
 
         this.clientBuilder = builder;
@@ -77,19 +76,16 @@ public class InvocationClientConfig extends AbstractConfig {
         return this.clientBuilder.build();
     }
 
-    ClientConfiguration loadAwsClientConfiguration() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-
+    EndpointConfiguration loadAwsEndpointConfiguration() {
         String httpProxyHost = this.getString(HTTP_PROXY_HOST_KEY);
         if (httpProxyHost != null && !httpProxyHost.isEmpty()) {
-            clientConfiguration.setProxyHost(httpProxyHost);
-
-            Integer httpProxyPort = this.getInt(HTTP_PROXY_PORT_KEY);
-            if (httpProxyPort > 0)
-                clientConfiguration.setProxyPort(httpProxyPort);
+            return new EndpointConfiguration(
+                this.getString(HTTP_PROXY_HOST_KEY),
+                getString(AWS_REGION_KEY)
+            );
         }
 
-        return clientConfiguration;
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -182,16 +178,6 @@ public class InvocationClientConfig extends AbstractConfig {
                 ++orderInGroup,
                 ConfigDef.Width.SHORT,
                 "HTTP proxy host")
-
-            .define(HTTP_PROXY_PORT_KEY,
-                ConfigDef.Type.STRING,
-                null,
-                ConfigDef.Importance.LOW,
-                HTTP_PROXY_PORT_DOC,
-                CONFIG_GROUP_NAME,
-                ++orderInGroup,
-                ConfigDef.Width.SHORT,
-                "HTTP proxy port")
 
             .define(CREDENTIALS_PROVIDER_CLASS_KEY,
                 ConfigDef.Type.CLASS,
