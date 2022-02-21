@@ -1,6 +1,6 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.amazonaws.ClientConfiguration;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
@@ -182,12 +182,12 @@ public class InvocationClient {
             return this;
         }
 
-        public ClientConfiguration getClientConfiguration() {
-            return this.innerBuilder.getClientConfiguration();
+        public EndpointConfiguration getEndpoint() {
+            return this.innerBuilder.getEndpoint();
         }
 
-        public Builder withClientConfiguration(final ClientConfiguration clientConfiguration) {
-            this.innerBuilder.withClientConfiguration(clientConfiguration);
+        public Builder withEndpointConfiguration(final EndpointConfiguration endpointConfiguration) {
+            this.innerBuilder.withEndpointConfiguration(endpointConfiguration);
             return this;
         }
 
