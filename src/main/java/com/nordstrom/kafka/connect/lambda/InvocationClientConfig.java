@@ -10,7 +10,7 @@ import org.apache.kafka.connect.errors.ConnectException;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
+import com.nordstrom.kafka.connect.auth.AWSUserCredentialsProvider;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,12 +40,10 @@ public class InvocationClientConfig extends AbstractConfig {
     static final String CREDENTIALS_PROVIDER_CONFIG_PREFIX = "aws.credentials.provider.";
     static final String CREDENTIALS_PROVIDER_CLASS_KEY = "aws.credentials.provider.class";
     static final String CREDENTIALS_PROVIDER_CLASS_DOC = "Implementation class which provides AWS authentication credentials";
-    static final String IAM_ROLE_ARN_KEY = CREDENTIALS_PROVIDER_CONFIG_PREFIX + AWSAssumeRoleCredentialsProvider.ROLE_ARN_CONFIG;
-    static final String IAM_ROLE_ARN_DOC = "Full ARN of an IAM role to assume";
-    static final String IAM_SESSION_NAME_KEY = CREDENTIALS_PROVIDER_CONFIG_PREFIX + AWSAssumeRoleCredentialsProvider.SESSION_NAME_CONFIG;
-    static final String IAM_SESSION_NAME_DOC = "IAM session name to use when assuming an IAM role";
-    static final String IAM_EXTERNAL_ID_KEY = CREDENTIALS_PROVIDER_CONFIG_PREFIX + AWSAssumeRoleCredentialsProvider.EXTERNAL_ID_CONFIG;
-    static final String IAM_EXTERNAL_ID_DOC = "External ID to use when assuming an IAM role";
+    static final String USER_ACCESS_KEY = CREDENTIALS_PROVIDER_CONFIG_PREFIX + AWSUserCredentialsProvider.ACCESS_KEY_CONFIG;
+    static final String USER_ACCESS_KEY_DOC = "User access_key";
+    static final String USER_SECRET_KEY = CREDENTIALS_PROVIDER_CONFIG_PREFIX + AWSUserCredentialsProvider.SECRET_KEY_CONFIG;
+    static final String USER_SECRET_KEY_DOC = "User secret_key";
 
     final InvocationClient.Builder clientBuilder;
 
@@ -190,35 +188,25 @@ public class InvocationClientConfig extends AbstractConfig {
                 ConfigDef.Width.LONG,
                 "AWS credentials provider class")
 
-            .define(IAM_ROLE_ARN_KEY,
+            .define(USER_ACCESS_KEY,
                 ConfigDef.Type.STRING,
                 null,
                 ConfigDef.Importance.LOW,
-                IAM_ROLE_ARN_DOC,
+                USER_ACCESS_KEY_DOC,
                 CONFIG_GROUP_NAME,
                 ++orderInGroup,
                 ConfigDef.Width.LONG,
-                "IAM role ARN")
+                "User access key")
 
-            .define(IAM_SESSION_NAME_KEY,
+            .define(USER_SECRET_KEY,
                 ConfigDef.Type.STRING,
                 null,
                 ConfigDef.Importance.LOW,
-                IAM_SESSION_NAME_DOC,
+                USER_SECRET_KEY_DOC,
                 CONFIG_GROUP_NAME,
                 ++orderInGroup,
                 ConfigDef.Width.SHORT,
-                "IAM session name")
-
-            .define(IAM_EXTERNAL_ID_KEY,
-                ConfigDef.Type.STRING,
-                null,
-                ConfigDef.Importance.LOW,
-                IAM_EXTERNAL_ID_DOC,
-                CONFIG_GROUP_NAME,
-                ++orderInGroup,
-                ConfigDef.Width.SHORT,
-                "IAM external ID");
+                "User secret key");
     }
 
     static class InvocationModeRecommender implements ConfigDef.Recommender {

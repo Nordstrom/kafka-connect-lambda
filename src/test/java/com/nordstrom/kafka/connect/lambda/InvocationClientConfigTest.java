@@ -3,7 +3,7 @@ package com.nordstrom.kafka.connect.lambda;
 import org.apache.kafka.common.config.ConfigException;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
+import com.nordstrom.kafka.connect.auth.AWSUserCredentialsProvider;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -43,10 +43,9 @@ public class InvocationClientConfigTest {
                 put("aws.lambda.invocation.mode", "SYNC");
                 put("aws.lambda.invocation.failure.mode", "DROP");
                 put("aws.lambda.batch.enabled", "true");
-                put("aws.credentials.provider.class", AWSAssumeRoleCredentialsProvider.class.getName());
-                put("aws.credentials.provider.role.arn", "test-role");
-                put("aws.credentials.provider.session.name", "test-session-name");
-                put("aws.credentials.provider.external.id", "test-external-id");
+                put("aws.credentials.provider.class", AWSUserCredentialsProvider.class.getName());
+                put("aws.credentials.provider.access.key", "test-access-key");
+                put("aws.credentials.provider.secret.key", "test-secret-key");
             }
         });
 
@@ -57,11 +56,10 @@ public class InvocationClientConfigTest {
         assertEquals(InvocationFailure.DROP, builder.getFailureMode());
         assertNull(builder.getEndpoint());
 
-        assertEquals(AWSAssumeRoleCredentialsProvider.class, builder.getCredentialsProvider().getClass());
-        AWSAssumeRoleCredentialsProvider credentialsProvider = (AWSAssumeRoleCredentialsProvider)builder.getCredentialsProvider();
-        assertEquals("test-role", credentialsProvider.getRoleArn());
-        assertEquals("test-session-name", credentialsProvider.getSessionName());
-        assertEquals("test-external-id", credentialsProvider.getExternalId());
+        assertEquals(AWSUserCredentialsProvider.class, builder.getCredentialsProvider().getClass());
+        AWSUserCredentialsProvider credentialsProvider = (AWSUserCredentialsProvider)builder.getCredentialsProvider();
+        assertEquals("test-access-key", credentialsProvider.getAccessKey());
+        assertEquals("test-secret-key", credentialsProvider.getSecretKey());
     }
 
     @Test(expected = ConfigException.class)
