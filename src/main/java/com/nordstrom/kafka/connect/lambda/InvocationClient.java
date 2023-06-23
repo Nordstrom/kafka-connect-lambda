@@ -60,15 +60,15 @@ public class InvocationClient {
         try {
             final InvokeResult result = futureResult.get(invocationTimeout.toMillis(), TimeUnit.MILLISECONDS);
             return new InvocationResponse(result.getStatusCode(), result.getLogResult(),
-                    result.getFunctionError(), start, Instant.now());
+                    result.getFunctionError(), result.getPayload(), start, Instant.now());
         } catch (RequestTooLargeException e) {
             return checkPayloadSizeForInvocationType(payload, type, start, e);
         } catch (final InterruptedException | ExecutionException e) {
             LOGGER.error(e.getLocalizedMessage(), e);
             throw new InvocationException(e);
         } catch (final TimeoutException e) {
-            return new InvocationResponse(504, e.getLocalizedMessage(), e.getLocalizedMessage(), start,
-                    Instant.now());
+            return new InvocationResponse(504, e.getLocalizedMessage(), e.getLocalizedMessage(),
+                    null, start, Instant.now());
         }
     }
 
@@ -105,7 +105,7 @@ public class InvocationClient {
             throw e;
         }
         // Drop message and continue
-        return new InvocationResponse(413, e.getLocalizedMessage(), e.getLocalizedMessage(), start, Instant.now());
+        return new InvocationResponse(413, e.getLocalizedMessage(), e.getLocalizedMessage(), null, start, Instant.now());
     }
 
     private class InvocationException extends RuntimeException {
