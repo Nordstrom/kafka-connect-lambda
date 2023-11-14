@@ -1,24 +1,26 @@
 package com.nordstrom.kafka.connect.lambda;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
 import org.apache.kafka.common.Configurable;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
-
+import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.time.Duration;
-import java.lang.reflect.InvocationTargetException;
 
 public class InvocationClientConfig extends AbstractConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InvocationClient.class);
     static final String CONFIG_GROUP_NAME = "Lambda";
 
     static final String AWS_REGION_KEY = "aws.region";
@@ -50,9 +52,14 @@ public class InvocationClientConfig extends AbstractConfig {
     static final String IAM_EXTERNAL_ID_DOC = "External ID to use when assuming an IAM role";
 
     final InvocationClient.Builder clientBuilder;
+    boolean isLocalstackEnabled;
 
     InvocationClientConfig(final Map<String, String> parsedConfig) {
         this(new InvocationClient.Builder(), parsedConfig);
+    }
+
+    InvocationClientConfig(final Map<String, String> parsedConfig, boolean valor) {
+        this(new InvocationClient.Builder(valor), parsedConfig);
     }
 
     InvocationClientConfig(final InvocationClient.Builder builder, final Map<String, String> parsedConfig) {
@@ -67,8 +74,11 @@ public class InvocationClientConfig extends AbstractConfig {
             .withCredentialsProvider(loadAwsCredentialsProvider());
 
         String awsRegion = getString(AWS_REGION_KEY);
-        if (awsRegion != null)
+
+        isLocalstackEnabled = Boolean.parseBoolean(parsedConfig.get(LambdaSinkConnectorConfig.LOCALSTACK_ENABLED_KEY));
+        if(!isLocalstackEnabled && awsRegion != null) {
             builder.setRegion(awsRegion);
+        }
 
         this.clientBuilder = builder;
     }

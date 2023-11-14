@@ -42,3 +42,6 @@ dependency-reduced-pom.xml
 # Only include the example configurations
 config/connector.json
 config/connector.properties
+
+volume
+result.*

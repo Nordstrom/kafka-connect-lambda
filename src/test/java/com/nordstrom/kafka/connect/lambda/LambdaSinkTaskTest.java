@@ -1,8 +1,5 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.amazonaws.services.lambda.model.InvocationType;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Schema;
@@ -17,8 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.apache.kafka.connect.data.Schema.STRING_SCHEMA;
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,13 +27,15 @@ public class LambdaSinkTaskTest {
                 new ImmutableMap.Builder<String, String>()
                         .put("connector.class", "com.nordstrom.kafka.connect.lambda.LambdaSinkConnector")
                         .put("tasks.max", "1")
-                        .put("aws.lambda.function.arn", "arn:aws:lambda:us-west-2:123456789123:function:test-lambda")
+                        .put("aws.lambda.function.arn", "arn:aws:lambda:us-east-1:000000000000:function:example-function")
                         .put("aws.lambda.invocation.timeout.ms", "300000")
                         .put("aws.lambda.invocation.mode", "SYNC")
                         .put("aws.lambda.batch.enabled", "false")
                         .put("key.converter", "org.apache.kafka.connect.storage.StringConverter")
                         .put("value.converter", "org.apache.kafka.connect.storage.StringConverter")
                         .put("topics", "connect-lambda-test")
+                        .put("localstack.enabled", "true")
+                        .put("aws.region", "us-east-1")
                         .build();
 
         LambdaSinkTask task = new LambdaSinkTask();

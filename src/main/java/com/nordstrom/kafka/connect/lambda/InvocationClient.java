@@ -2,6 +2,7 @@ package com.nordstrom.kafka.connect.lambda;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.model.InvocationType;
@@ -11,12 +12,14 @@ import com.amazonaws.services.lambda.model.RequestTooLargeException;
 
 import com.nordstrom.kafka.connect.utils.Facility;
 
+import org.apache.kafka.common.config.ConfigDef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -119,11 +122,25 @@ public class InvocationClient {
         private InvocationMode invocationMode = DEFAULT_INVOCATION_MODE;
         private InvocationFailure failureMode = DEFAULT_FAILURE_MODE;
         private Duration invocationTimeout = Duration.ofMillis(DEFAULT_INVOCATION_TIMEOUT_MS);
+        private boolean localstackEnabled;
+
+        public boolean isLocalstackEnabled() {
+            return localstackEnabled;
+        }
 
         private final AWSLambdaAsyncClientBuilder innerBuilder;
 
         public Builder() {
             this.innerBuilder = AWSLambdaAsyncClientBuilder.standard();
+        }
+
+        public Builder(boolean isLocalstackEnabled) {
+            this.innerBuilder = AWSLambdaAsyncClientBuilder.standard();
+            if(isLocalstackEnabled) {
+                LOGGER.info("Localstack is enabled", isLocalstackEnabled);
+                AwsClientBuilder.EndpointConfiguration endpoint = new AwsClientBuilder.EndpointConfiguration("http://localhost:4566", "us-east-1");
+                this.innerBuilder.setEndpointConfiguration(endpoint);
+            }
         }
 
         public InvocationClient build() {

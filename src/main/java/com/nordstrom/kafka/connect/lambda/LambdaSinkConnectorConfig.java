@@ -1,20 +1,18 @@
 package com.nordstrom.kafka.connect.lambda;
 
+import com.nordstrom.kafka.connect.formatters.PayloadFormatter;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
-import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigDef.Importance;
+import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
-
-import com.nordstrom.kafka.connect.formatters.PayloadFormatter;
 
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class LambdaSinkConnectorConfig extends AbstractConfig {
     static final String CONNECTOR_NAME_KEY = "name";
@@ -40,6 +38,11 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     private final Collection<Integer> retriableErrorCodes;
     private final InvocationClientConfig invocationClientConfig;
     private final PayloadFormatterConfig payloadFormatterConfig;
+    private final boolean localstackEnabled;
+
+    static final String LOCALSTACK_ENABLED_KEY = "localstack.enabled";
+    static final String LOCALSTACK_ENABLED_DOC = "Determines whether to use Localstack for development on localhost";
+    static final boolean LOCALSTACK_ENABLED_DEFAULT = false;
 
     LambdaSinkConnectorConfig(final Map<String, String> parsedConfig) {
         super(configDef(), parsedConfig);
@@ -48,8 +51,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
             .ints(4)
             .mapToObj(String::valueOf)
             .collect(Collectors.joining()));
+
         this.retriableErrorCodes = loadRetriableErrorCodes();
-        this.invocationClientConfig = new InvocationClientConfig(parsedConfig);
+        this.localstackEnabled = getBoolean(LOCALSTACK_ENABLED_KEY);
+        this.invocationClientConfig = isLocalstackEnabled() ? new InvocationClientConfig(parsedConfig, this.localstackEnabled): new InvocationClientConfig(parsedConfig);
         this.payloadFormatterConfig = new PayloadFormatterConfig(parsedConfig);
     }
 
@@ -87,6 +92,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
     public PayloadFormatter getPayloadFormatter() {
         return payloadFormatterConfig.getPayloadFormatter();
+    }
+
+    public boolean isLocalstackEnabled() {
+        return localstackEnabled;
     }
 
     Collection<Integer> loadRetriableErrorCodes() {
@@ -128,7 +137,13 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                 Type.LIST,
                 RETRIABLE_ERROR_CODES_DEFAULT,
                 Importance.LOW,
-                RETRIABLE_ERROR_CODES_DOC);
+                RETRIABLE_ERROR_CODES_DOC)
+
+            .define(LOCALSTACK_ENABLED_KEY,
+                    ConfigDef.Type.BOOLEAN,
+                    LOCALSTACK_ENABLED_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    LOCALSTACK_ENABLED_DOC);
 
         InvocationClientConfig.configDef(configDef);
         PayloadFormatterConfig.configDef(configDef);

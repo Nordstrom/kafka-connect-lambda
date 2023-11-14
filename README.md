@@ -43,6 +43,7 @@ In addition to the standard [Kafka Connect connector configuration](https://kafk
 | `payload.formatter.class` | No | `com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter` | Specifies the formatter to use. |
 | `payload.formatter.key.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
 | `payload.formatter.value.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
+| `localstack.enabled` | No | `false` | Determines whether to use Localstack for development on localhost. |
 
 ## Formatters
 
@@ -180,38 +181,72 @@ Expected output:
 
 Follow the demo in order to: create an AWS Lambda function, build the connector plugin, run the connector, and send a message.
 
+## Build the connector plugin
+
+```bash
+mvn clean package
+```
+
+Once built, a `kafka-connect-lambda` uber-jar is in the `target/plugin` directory.
+
+## Starts Kafka containers / Localstack
+```bash
+docker-compose up
+```
+
 ## Create an AWS Lambda function
 
 With an active AWS account, can create a simple AWS Lambda function using the [CloudFormation](https://aws.amazon.com/cloudformation) template in the `config/` directory:
 
-```
+Example using AWS:
+```bash
 aws cloudformation create-stack \
   --stack-name example-lambda-stack \
   --capabilities CAPABILITY_NAMED_IAM \
   --template-body file://config/cloudformation.yml
 ```
 
+Example using Localstack:
+```bash
+aws cloudformation create-stack \
+  --stack-name example-lambda-stack \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --template-body file://config/cloudformation.yml \
+  --endpoint-url http://localhost:4566
+```
+
 To make sure our Lambda works, invoke it directly and view the result payload in `result.txt`:
 
+Example using AWS:
+```bash
+aws lambda invoke --function-name example-function \
+--cli-binary-format raw-in-base64-out \
+--payload '{"value": "my example"}' --output text result.txt
 ```
-aws lambda invoke --function-name example-function --payload '{"value": "my example"}' result.txt
+
+Example using Localstack:
+```bash
+aws lambda invoke --function-name example-function \
+--cli-binary-format raw-in-base64-out \
+--payload '{"value": "my example"}' --output text result.txt \
+--endpoint-url http://localhost:4566
 ```
 
 The function simply sends the `payload` back to you in `result.txt` as serialized json.
 
 Use the `describe-stacks` command to fetch the CloudFormation output value for `ExampleFunctionArn`, which we'll need later when setting up our connector configuration:
 
-```
-aws cloudformation describe-stacks --stack-name example-lambda-stack --query "Stacks[0].Outputs[]"
-```
-
-## Build the connector plugin
-
-```
-mvn clean package
+```bash
+aws cloudformation describe-stacks \
+--stack-name example-lambda-stack \
+--query "Stacks[0].Outputs[]"
 ```
 
-Once built, a `kafka-connect-lambda` uber-jar is in the `target/plugin` directory.
+```bash
+aws cloudformation describe-stacks --stack-name example-lambda-stack \
+--query "Stacks[0].Outputs[]" \
+--endpoint-url http://localhost:4566
+```
 
 ## Run the connector using Docker Compose
 
@@ -223,8 +258,22 @@ With the [Kafka Connect REST interface](https://docs.confluent.io/current/connec
 
 Next, supply a connector configuration. You can use `config/connector.json.example` as a starting-point. Fill in values for `<Your AWS Region>` and `<Your function ARN>` and run:
 
-```
+In AWS use:
+```bash
+# creates the connector
 curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @config/connector.json
+
+# shows the status of connector
+curl http://localhost:8083/connectors/example-lambda-connector/status
+```
+
+In Localstack use:
+```bash
+# creates the connector
+curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @config/connector-localstack.json
+
+# shows the status of connector
+curl http://localhost:8083/connectors/example-lambda-connector-localstack/status
 ```
 
 ## Run the connector using the Confluent Platform
@@ -243,4 +292,23 @@ connect-standalone config/worker.properties config/connector.properties
 
 Using the Kafka console producer, send a message to the `example-stream` topic. Your `example-lambda-connector` will read the message from the topic and invoke the AWS Lambda `example-function`.
 
+```bash
+# opens the command line
+docker-compose exec broker bash
+
+# connects to the Kafka console producer and sends a message
+kafka-console-producer --broker-list localhost:19092 --topic example-stream
+# {"value": "my example"}
+```
+
 Use the AWS Console to read the output of your message sent from the CloudWatch logs for the Lambda.
+
+In Localstack, use the following commands to display the logs:
+```bash
+# list the logs groups
+aws logs describe-log-groups --endpoint-url http://localhost:4566
+
+
+# list the logs streams
+aws logs tail /aws/lambda/example-function --follow --endpoint-url http://localhost:4566
+```

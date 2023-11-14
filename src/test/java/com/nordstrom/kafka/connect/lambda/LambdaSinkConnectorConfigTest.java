@@ -26,6 +26,7 @@ public class LambdaSinkConnectorConfigTest {
         assertNotNull(config.getRetriableErrorCodes());
         assertEquals(500L, config.getRetryBackoffTimeMillis());
         assertEquals(5, config.getRetries());
+        assertFalse(config.isLocalstackEnabled());
     }
 
     @Test
@@ -43,6 +44,7 @@ public class LambdaSinkConnectorConfigTest {
                 put("retriable.error.codes", "1,2,3");
                 put("retry.backoff.millis", "123");
                 put("retries.max", "456");
+                put("localstack.enabled", "true");
             }
         });
 
@@ -53,5 +55,6 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals(3, config.getRetriableErrorCodes().size());
         assertEquals(123, config.getRetryBackoffTimeMillis());
         assertEquals(456, config.getRetries());
+        assertTrue(config.isLocalstackEnabled());
     }
 }
