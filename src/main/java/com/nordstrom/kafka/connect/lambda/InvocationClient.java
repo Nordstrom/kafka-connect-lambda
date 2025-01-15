@@ -1,20 +1,19 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.lambda.AWSLambdaAsync;
-import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
-import com.amazonaws.services.lambda.model.InvocationType;
-import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.amazonaws.services.lambda.model.InvokeResult;
-import com.amazonaws.services.lambda.model.RequestTooLargeException;
-
-import com.nordstrom.kafka.connect.utils.Facility;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
+import software.amazon.awssdk.services.lambda.LambdaAsyncClientBuilder;
+import software.amazon.awssdk.services.lambda.model.InvocationType;
+import software.amazon.awssdk.services.lambda.model.InvokeRequest;
+import software.amazon.awssdk.services.lambda.model.InvokeResponse;
+import software.amazon.awssdk.services.lambda.model.RequestTooLargeException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
@@ -34,33 +33,34 @@ public class InvocationClient {
     private static final int maxSyncPayloadSizeBytes = (6 * MEGABYTE_SIZE);
     private static final int maxAsyncPayloadSizeBytes = (256 * KILOBYTE_SIZE);
 
-    private final AWSLambdaAsync innerClient;
+    private final LambdaAsyncClient innerClient;
     private final String functionArn;
     private InvocationFailure failureMode;
     private InvocationMode invocationMode;
     private Duration invocationTimeout;
 
-    private InvocationClient(String functionArn, AWSLambdaAsync innerClient) {
+    private InvocationClient(String functionArn, LambdaAsyncClient innerClient) {
         this.functionArn = functionArn;
         this.innerClient = innerClient;
     }
 
     public InvocationResponse invoke(final byte[] payload) {
         final InvocationType type = invocationMode == InvocationMode.ASYNC
-            ? InvocationType.Event : InvocationType.RequestResponse;
+            ? InvocationType.EVENT : InvocationType.REQUEST_RESPONSE;
 
-        final InvokeRequest request = new InvokeRequest()
-                .withInvocationType(type)
-                .withFunctionName(functionArn)
-                .withPayload(ByteBuffer.wrap(payload));
+        final InvokeRequest request = InvokeRequest.builder()
+                .invocationType(type)
+                .functionName(functionArn)
+                .payload(SdkBytes.fromByteArray(payload))
+                .build();
 
-        final Future<InvokeResult> futureResult = innerClient.invokeAsync(request);
+        final Future<InvokeResponse> futureResult = innerClient.invoke(request);
 
         final Instant start = Instant.now();
         try {
-            final InvokeResult result = futureResult.get(invocationTimeout.toMillis(), TimeUnit.MILLISECONDS);
-            return new InvocationResponse(result.getStatusCode(), result.getLogResult(),
-                    result.getFunctionError(), start, Instant.now());
+            final InvokeResponse result = futureResult.get(invocationTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            return new InvocationResponse(result.statusCode(), result.logResult(),
+                    result.functionError(), start, Instant.now());
         } catch (RequestTooLargeException e) {
             return checkPayloadSizeForInvocationType(payload, type, start, e);
         } catch (final InterruptedException | ExecutionException e) {
@@ -84,13 +84,13 @@ public class InvocationClient {
     InvocationResponse checkPayloadSizeForInvocationType(final byte[] payload, final InvocationType event, final Instant start, final RequestTooLargeException e) {
         switch (event) {
 
-            case Event:
+            case EVENT:
                 if (payload.length > maxAsyncPayloadSizeBytes) {
                     LOGGER.error("{} bytes payload exceeded {} bytes invocation limit for asynchronous Lambda call", payload.length, maxAsyncPayloadSizeBytes);
                 }
                 break;
 
-            case RequestResponse:
+            case REQUEST_RESPONSE:
                 if (payload.length > maxSyncPayloadSizeBytes) {
                     LOGGER.error("{} bytes payload exceeded {} bytes invocation limit for synchronous Lambda call", payload.length, maxSyncPayloadSizeBytes);
                 }
@@ -119,11 +119,14 @@ public class InvocationClient {
         private InvocationMode invocationMode = DEFAULT_INVOCATION_MODE;
         private InvocationFailure failureMode = DEFAULT_FAILURE_MODE;
         private Duration invocationTimeout = Duration.ofMillis(DEFAULT_INVOCATION_TIMEOUT_MS);
+        private String region;
+        private SdkAsyncHttpClient httpClient;
+        private AwsCredentialsProvider credentialsProvider;
 
-        private final AWSLambdaAsyncClientBuilder innerBuilder;
+        private final LambdaAsyncClientBuilder innerBuilder;
 
         public Builder() {
-            this.innerBuilder = AWSLambdaAsyncClientBuilder.standard();
+            this.innerBuilder = LambdaAsyncClient.builder();
         }
 
         public InvocationClient build() {
@@ -174,29 +177,32 @@ public class InvocationClient {
         }
 
         public String getRegion() {
-            return this.innerBuilder.getRegion();
+            return this.region;
         }
 
         public Builder setRegion(final String awsRegion) {
-            this.innerBuilder.setRegion(awsRegion);
+            this.innerBuilder.region(Region.of(awsRegion));
+            this.region = awsRegion;
             return this;
         }
 
-        public ClientConfiguration getClientConfiguration() {
-            return this.innerBuilder.getClientConfiguration();
+        public SdkAsyncHttpClient getHttpClient() {
+            return this.httpClient;
         }
 
-        public Builder withClientConfiguration(final ClientConfiguration clientConfiguration) {
-            this.innerBuilder.withClientConfiguration(clientConfiguration);
+        public Builder withHttpClient(final SdkAsyncHttpClient httpClient) {
+            this.innerBuilder.httpClient(httpClient);
+            this.httpClient = httpClient;
             return this;
         }
 
-        public AWSCredentialsProvider getCredentialsProvider() {
-            return this.innerBuilder.getCredentials();
+        public AwsCredentialsProvider getCredentialsProvider() {
+            return this.credentialsProvider;
         }
 
-        public Builder withCredentialsProvider(final AWSCredentialsProvider credentialsProvider) {
-            this.innerBuilder.withCredentials(credentialsProvider);
+        public Builder withCredentialsProvider(final AwsCredentialsProvider credentialsProvider) {
+            this.innerBuilder.credentialsProvider(credentialsProvider);
+            this.credentialsProvider = credentialsProvider;
             return this;
         }
     }

@@ -33,6 +33,9 @@ bin/
 .idea/
 *.iml
 
+# VS Code
+.vscode/
+
 # maven-shade-plugin
 dependency-reduced-pom.xml
 

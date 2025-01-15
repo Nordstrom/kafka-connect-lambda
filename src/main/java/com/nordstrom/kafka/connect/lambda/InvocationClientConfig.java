@@ -4,12 +4,13 @@ import org.apache.kafka.common.Configurable;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.errors.ConnectException;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+import software.amazon.awssdk.http.nio.netty.ProxyConfiguration;
+
 import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
 
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.time.Duration;
 import java.lang.reflect.InvocationTargetException;
+import java.util.stream.Collectors;
 
 public class InvocationClientConfig extends AbstractConfig {
     static final String CONFIG_GROUP_NAME = "Lambda";
@@ -63,7 +65,9 @@ public class InvocationClientConfig extends AbstractConfig {
             .setInvocationMode(InvocationMode.valueOf(getString(INVOCATION_MODE_KEY)))
             .setInvocationTimeout(Duration.ofMillis(getLong(INVOCATION_TIMEOUT_KEY)))
             .setFailureMode(InvocationFailure.valueOf(getString(FAILURE_MODE_KEY)))
-            .withClientConfiguration(loadAwsClientConfiguration())
+            .withHttpClient(NettyNioAsyncHttpClient.builder()
+                .proxyConfiguration(loadAwsProxyConfiguration())
+                .build())
             .withCredentialsProvider(loadAwsCredentialsProvider());
 
         String awsRegion = getString(AWS_REGION_KEY);
@@ -77,26 +81,27 @@ public class InvocationClientConfig extends AbstractConfig {
         return this.clientBuilder.build();
     }
 
-    ClientConfiguration loadAwsClientConfiguration() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
+    ProxyConfiguration loadAwsProxyConfiguration() {
+        ProxyConfiguration.Builder proxyConfigurationBuilder = ProxyConfiguration.builder();
 
         String httpProxyHost = this.getString(HTTP_PROXY_HOST_KEY);
         if (httpProxyHost != null && !httpProxyHost.isEmpty()) {
-            clientConfiguration.setProxyHost(httpProxyHost);
+
+            proxyConfigurationBuilder.host(httpProxyHost);
 
             Integer httpProxyPort = this.getInt(HTTP_PROXY_PORT_KEY);
-            if (httpProxyPort > 0)
-                clientConfiguration.setProxyPort(httpProxyPort);
+            if (httpProxyPort > 0) {
+                proxyConfigurationBuilder.port(httpProxyPort);
+            }
         }
 
-        return clientConfiguration;
+        return proxyConfigurationBuilder.build();
     }
 
-    @SuppressWarnings("unchecked")
-    AWSCredentialsProvider loadAwsCredentialsProvider() {
+    AwsCredentialsProvider loadAwsCredentialsProvider() {
         try {
-            AWSCredentialsProvider credentialsProvider = ((Class<? extends AWSCredentialsProvider>)
-                getClass(CREDENTIALS_PROVIDER_CLASS_KEY)).getDeclaredConstructor().newInstance();
+            AwsCredentialsProvider credentialsProvider = (AwsCredentialsProvider) getClass(CREDENTIALS_PROVIDER_CLASS_KEY)
+                .getDeclaredMethod("create").invoke(null);
 
             if (credentialsProvider instanceof Configurable) {
                 Map<String, Object> configs = originalsWithPrefix(
@@ -107,7 +112,7 @@ public class InvocationClientConfig extends AbstractConfig {
 
             return credentialsProvider;
 
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new ConnectException("Unable to create " + CREDENTIALS_PROVIDER_CLASS_KEY, e);
         }
     }
@@ -195,7 +200,7 @@ public class InvocationClientConfig extends AbstractConfig {
 
             .define(CREDENTIALS_PROVIDER_CLASS_KEY,
                 ConfigDef.Type.CLASS,
-                DefaultAWSCredentialsProviderChain.class,
+                DefaultCredentialsProvider.class,
                 new AwsCredentialsProviderValidator(),
                 ConfigDef.Importance.LOW,
                 CREDENTIALS_PROVIDER_CLASS_DOC,
@@ -254,13 +259,13 @@ public class InvocationClientConfig extends AbstractConfig {
                 InvocationMode.valueOf(((String)invocationMode).trim());
             } catch (Exception e) {
                 throw new ConfigException(name, invocationMode, "Value must be one of [" +
-                    Utils.join(InvocationMode.values(), ", ") + "]");
+                    Arrays.stream(InvocationMode.values()).map(InvocationMode::toString).collect(Collectors.joining(", ")) + "]");
             }
         }
 
         @Override
         public String toString() {
-            return "[" + Utils.join(InvocationMode.values(), ", ") + "]";
+            return "[" + Arrays.stream(InvocationMode.values()).map(InvocationMode::toString).collect(Collectors.joining(", ")) + "]";
         }
     }
 
@@ -283,29 +288,29 @@ public class InvocationClientConfig extends AbstractConfig {
                 InvocationFailure.valueOf(((String)invocationFailure).trim());
             } catch (Exception e) {
                 throw new ConfigException(name, invocationFailure, "Value must be one of [" +
-                    Utils.join(InvocationFailure.values(), ", ") + "]");
+                Arrays.stream(InvocationFailure.values()).map(InvocationFailure::toString).collect(Collectors.joining(", ")) + "]");
             }
         }
 
         @Override
         public String toString() {
-            return "[" + Utils.join(InvocationFailure.values(), ", ") + "]";
+            return "[" + Arrays.stream(InvocationFailure.values()).map(InvocationFailure::toString).collect(Collectors.joining(", ")) + "]";
         }
     }
 
     static class AwsCredentialsProviderValidator implements ConfigDef.Validator {
         @Override
         public void ensureValid(String name, Object provider) {
-          if (provider instanceof Class && AWSCredentialsProvider.class.isAssignableFrom((Class<?>)provider)) {
+          if (provider instanceof Class && AwsCredentialsProvider.class.isAssignableFrom((Class<?>)provider)) {
               return;
           }
 
-          throw new ConfigException(name, provider, "Class must extend: " + AWSCredentialsProvider.class);
+          throw new ConfigException(name, provider, "Class must extend: " + AwsCredentialsProvider.class);
         }
 
         @Override
         public String toString() {
-            return "Any class implementing: " + AWSCredentialsProvider.class;
+            return "Any class implementing: " + AwsCredentialsProvider.class;
         }
     }
 }

@@ -1,8 +1,5 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.amazonaws.services.lambda.model.InvocationType;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Schema;
@@ -17,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.apache.kafka.connect.data.Schema.STRING_SCHEMA;
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
