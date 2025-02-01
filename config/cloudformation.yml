@@ -6,7 +6,7 @@ Resources:
     Properties:
       FunctionName: example-function
       Handler: index.handler
-      Runtime: python3.7
+      Runtime: python3.9
       Role: !GetAtt 'ExampleFunctionRole.Arn'
       Code:
         ZipFile: |
