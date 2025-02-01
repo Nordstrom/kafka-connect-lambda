@@ -1,9 +1,9 @@
 package com.nordstrom.kafka.connect.auth;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import org.apache.kafka.common.Configurable;
 
 import java.util.Map;
@@ -11,7 +11,7 @@ import java.util.Map;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 
-public class AWSAssumeRoleCredentialsProvider implements AWSCredentialsProvider, Configurable {
+public class AWSAssumeRoleCredentialsProvider implements AwsCredentialsProvider, Configurable {
 //  Uncomment slf4j imports and field declaration to enable logging.
 //  private static final Logger log = LoggerFactory.getLogger(AWSAssumeRoleCredentialsProvider.class);
 
@@ -23,6 +23,10 @@ public class AWSAssumeRoleCredentialsProvider implements AWSCredentialsProvider,
   private String roleArn;
   private String sessionName;
 
+  public static AWSAssumeRoleCredentialsProvider create() {
+    return new AWSAssumeRoleCredentialsProvider();
+  }
+
   @Override
   public void configure(Map<String, ?> map) {
     externalId = getOptionalField(map, EXTERNAL_ID_CONFIG);
@@ -31,19 +35,16 @@ public class AWSAssumeRoleCredentialsProvider implements AWSCredentialsProvider,
   }
 
   @Override
-  public AWSCredentials getCredentials() {
-    AWSSecurityTokenServiceClientBuilder clientBuilder = AWSSecurityTokenServiceClientBuilder.standard();
-    AWSCredentialsProvider provider = new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-        .withStsClient(clientBuilder.defaultClient())
-        .withExternalId(externalId)
-        .build();
+  public AwsCredentials resolveCredentials() {
+    AwsCredentialsProvider provider = StsAssumeRoleCredentialsProvider.builder()
+      .stsClient(StsClient.create())
+      .refreshRequest(r -> r
+        .externalId(externalId)
+        .roleArn(roleArn)
+        .roleSessionName(sessionName))
+      .build();
 
-    return provider.getCredentials();
-  }
-
-  @Override
-  public void refresh() {
-    //Nothing to do really, since we are assuming a role.
+    return provider.resolveCredentials();
   }
 
   String getOptionalField(final Map<String, ?> map, final String fieldName) {

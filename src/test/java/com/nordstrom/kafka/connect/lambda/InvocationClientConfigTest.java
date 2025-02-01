@@ -2,7 +2,7 @@ package com.nordstrom.kafka.connect.lambda;
 
 import org.apache.kafka.common.config.ConfigException;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import com.nordstrom.kafka.connect.auth.AWSAssumeRoleCredentialsProvider;
 
 import java.time.Duration;
@@ -27,8 +27,8 @@ public class InvocationClientConfigTest {
         assertEquals(InvocationMode.SYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.STOP, builder.getFailureMode());
         assertEquals(Duration.ofMinutes(5), builder.getInvocationTimeout());
-        assertNotNull(builder.getClientConfiguration());
-        assertEquals(DefaultAWSCredentialsProviderChain.class, builder.getCredentialsProvider().getClass());
+        assertNotNull(builder.getHttpClient());
+        assertEquals(DefaultCredentialsProvider.class, builder.getCredentialsProvider().getClass());
     }
 
     @Test
@@ -55,7 +55,7 @@ public class InvocationClientConfigTest {
         assertEquals(123, builder.getInvocationTimeout().toMillis());
         assertEquals(InvocationMode.SYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.DROP, builder.getFailureMode());
-        assertNotNull(builder.getClientConfiguration());
+        assertNotNull(builder.getHttpClient());
 
         assertEquals(AWSAssumeRoleCredentialsProvider.class, builder.getCredentialsProvider().getClass());
         AWSAssumeRoleCredentialsProvider credentialsProvider = (AWSAssumeRoleCredentialsProvider)builder.getCredentialsProvider();

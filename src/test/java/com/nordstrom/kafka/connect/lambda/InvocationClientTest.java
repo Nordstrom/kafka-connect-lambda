@@ -1,10 +1,11 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.lambda.model.InvocationType;
-import com.amazonaws.services.lambda.model.RequestTooLargeException;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+import software.amazon.awssdk.services.lambda.model.InvocationType;
+import software.amazon.awssdk.services.lambda.model.RequestTooLargeException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,14 +22,15 @@ public class InvocationClientTest {
         assertEquals(InvocationMode.SYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.STOP, builder.getFailureMode());
         assertEquals(Duration.ofMinutes(5), builder.getInvocationTimeout());
-        assertNull(builder.getClientConfiguration());
+        assertNull(builder.getHttpClient());
         assertNull(builder.getCredentialsProvider());
     }
 
     @Test
     public void testBuilderReflexiveProperties() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
+        SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.create();
+        AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.builder()
+                .build();
 
         InvocationClient.Builder builder = new InvocationClient.Builder()
             .setFunctionArn("test-function-arn")
@@ -36,7 +38,7 @@ public class InvocationClientTest {
             .setInvocationMode(InvocationMode.ASYNC)
             .setFailureMode(InvocationFailure.DROP)
             .setInvocationTimeout(Duration.ofSeconds(123))
-            .withClientConfiguration(clientConfiguration)
+            .withHttpClient(httpClient)
             .withCredentialsProvider(credentialsProvider);
 
         assertEquals("test-function-arn", builder.getFunctionArn());
@@ -44,7 +46,7 @@ public class InvocationClientTest {
         assertEquals(InvocationMode.ASYNC, builder.getInvocationMode());
         assertEquals(InvocationFailure.DROP, builder.getFailureMode());
         assertEquals(Duration.ofSeconds(123), builder.getInvocationTimeout());
-        assertSame(clientConfiguration, builder.getClientConfiguration());
+        assertSame(httpClient, builder.getHttpClient());
         assertSame(credentialsProvider, builder.getCredentialsProvider());
     }
 
@@ -63,9 +65,10 @@ public class InvocationClientTest {
 
         client.checkPayloadSizeForInvocationType(
             "testpayload".getBytes(),
-            InvocationType.RequestResponse,
+            InvocationType.REQUEST_RESPONSE,
             Instant.now(),
-            new RequestTooLargeException("Request payload is too large!"));
+                RequestTooLargeException.builder()
+                        .build());
     }
 
     @Test
@@ -78,9 +81,10 @@ public class InvocationClientTest {
         try {
             testResp = client.checkPayloadSizeForInvocationType(
                 "testpayload".getBytes(),
-                InvocationType.RequestResponse,
+                InvocationType.REQUEST_RESPONSE,
                 Instant.now(),
-                new RequestTooLargeException("Request payload is too large!"));
+                    RequestTooLargeException.builder()
+                            .build());
         } catch (RequestTooLargeException e) {
             ex = e;
         }
