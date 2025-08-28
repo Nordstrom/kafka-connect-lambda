@@ -2,6 +2,10 @@
 
 A Kafka Connect sink plugin to invoke AWS Lambda functions.
 
+## 👋 kafka-connect-lambda is seeking an owner
+
+This project is seeking a new owner. By **November 1st, 2025**, if we cannot find a new owner, we'll begin the process to archive the project. See issue Nordstrom/kafka-connect-lambda#57 for more information.
+
 ## Compatibility Matrix
 |kafka-connect-lambda|Kafka Connect API|AWS SDK|
 |:---|:---|:---|
